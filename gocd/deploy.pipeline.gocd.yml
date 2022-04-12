@@ -106,9 +106,6 @@ pipelines:
       dev_env:
         pipeline: prm-repo-gp-registrations-mi-forwarder.dev
         stage: deploy
-      e2e:
-        pipeline: continuity-e2e-tests.dev
-        stage: test
     environment_variables:
       NHS_ENVIRONMENT: test
     stages: *common_stages
@@ -128,9 +125,6 @@ pipelines:
       test_env:
         pipeline: prm-repo-gp-registrations-mi-forwarder.test
         stage: deploy
-      e2e:
-        pipeline: continuity-e2e-tests.test
-        stage: test
     environment_variables:
       NHS_ENVIRONMENT: pre-prod
     stages: *common_stages
