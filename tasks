@@ -141,6 +141,18 @@ function build_docker_image() {
 
 command="$1"
 case "${command}" in
+  fetch_utils)
+      fetch_redaction_utils
+      ;;
+  build_docker)
+      configure_envs
+      dojo -c Dojofile-itest "./tasks _build"
+      configure_docker_repository_uri
+      fetch_redaction_utils
+      build_docker_image
+      echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
+      docker push $REPOSITORY_URI:$IMAGE_TAG
+      ;;
   _build)
       rm -rf build/
       gradle assemble
