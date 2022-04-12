@@ -1,0 +1,177 @@
+format_version: 4
+common:
+  plan_job: &plan_job
+    resources:
+      - docker
+    artifacts:
+      - build:
+          source: terraform/nhs_deployment.tfplan
+          destination: terraform/
+    tasks:
+      - exec:
+          command: /bin/bash
+          arguments:
+            - -c
+            - ./tasks tf_plan create
+  deploy_job: &deploy_job
+    resources:
+      - docker
+    tasks:
+      - fetch:
+          stage: plan
+          job: plan
+          source: terraform/nhs_deployment.tfplan
+          destination: terraform/
+          is_file: yes
+      - exec:
+          command: /bin/bash
+          arguments:
+            - -c
+            - ./tasks tf_apply
+      - exec:
+          command: /bin/bash
+          arguments:
+            - -c
+            - ./tasks wait_ecs
+  common_stages: &common_stages
+    - promote_docker_image:
+        resources:
+          - docker
+        clean_workspace: true
+        tasks:
+          - exec:
+              command: /bin/bash
+              arguments:
+                - -c
+                - ./tasks promote_docker_image
+    - plan:
+        clean_workspace: true
+        jobs:
+          plan: *plan_job
+    - deploy:
+        clean_workspace: true
+        jobs:
+          deploy: *deploy_job
+  prod_stages: &prod_stages
+    - promote_docker_image:
+        resources:
+          - docker
+        clean_workspace: true
+        tasks:
+          - exec:
+              command: /bin/bash
+              arguments:
+                - -c
+                - ./tasks promote_docker_image
+    - plan:
+        clean_workspace: true
+        jobs:
+          plan: *plan_job
+    - deploy:
+        approval:
+          type: manual
+          allow_only_on_success: true
+        clean_workspace: true
+        jobs:
+          deploy: *deploy_job
+pipelines:
+  'prm-repo-gp-registrations-mi-forwarder.dev':
+    group: deductions
+    label_template: '${git[:8]}'
+    materials:
+      git:
+        type: configrepo
+      app:
+        pipeline: prm-repo-gp-registrations-mi-forwarder
+        stage: docker
+      base_infra:
+        pipeline: prm-deductions-infra
+        stage: deploy_dev
+    environment_variables:
+      NHS_ENVIRONMENT: dev
+    stages: *common_stages
+
+  'prm-repo-gp-registrations-mi-forwarder.test':
+    group: deductions
+    label_template: '${git[:8]}'
+    materials:
+      git:
+        type: configrepo
+      app:
+        pipeline: prm-repo-gp-registrations-mi-forwarder
+        stage: docker
+      base_infra:
+        pipeline: prm-deductions-infra
+        stage: deploy_test
+      dev_env:
+        pipeline: prm-repo-gp-registrations-mi-forwarder.dev
+        stage: deploy
+      e2e:
+        pipeline: continuity-e2e-tests.dev
+        stage: test
+    environment_variables:
+      NHS_ENVIRONMENT: test
+    stages: *common_stages
+
+  'prm-repo-gp-registrations-mi-forwarder.pre-prod':
+    group: deductions
+    label_template: '${git[:8]}'
+    materials:
+      git:
+        type: configrepo
+      app:
+        pipeline: prm-repo-gp-registrations-mi-forwarder
+        stage: docker
+      base_infra:
+        pipeline: prm-deductions-infra
+        stage: deploy_pre_prod
+      test_env:
+        pipeline: prm-repo-gp-registrations-mi-forwarder.test
+        stage: deploy
+      e2e:
+        pipeline: continuity-e2e-tests.test
+        stage: test
+    environment_variables:
+      NHS_ENVIRONMENT: pre-prod
+    stages: *common_stages
+
+#  'prm-repo-gp-registrations-mi-forwarder.perf':
+#    group: deductions
+#    label_template: '${git[:8]}'
+#    materials:
+#      git:
+#        type: configrepo
+#      app:
+#        pipeline: prm-repo-gp-registrations-mi-forwarder
+#        stage: docker
+#      base_infra:
+#        pipeline: prm-deductions-infra
+#        stage: deploy_perf
+#      test_env:
+#        pipeline: prm-repo-gp-registrations-mi-forwarder.test
+#        stage: deploy
+#      e2e:
+#        pipeline: continuity-e2e-tests.test
+#        stage: test
+#    environment_variables:
+#      NHS_ENVIRONMENT: perf
+#    stages: *common_stages
+
+  'prm-repo-gp-registrations-mi-forwarder.prod':
+    group: deductions
+    label_template: '${git[:8]}'
+    materials:
+      git:
+        type: configrepo
+      app:
+        pipeline: prm-repo-gp-registrations-mi-forwarder
+        stage: docker
+      base_infra:
+        pipeline: prm-deductions-infra
+        stage: deploy_prod
+      pre-prod_env:
+        pipeline: prm-repo-gp-registrations-mi-forwarder.pre-prod
+        stage: deploy
+    environment_variables:
+      NHS_ENVIRONMENT: prod
+    stages: *prod_stages

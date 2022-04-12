@@ -1,0 +1,125 @@
+plugins {
+	id 'org.springframework.boot' version '2.6.6'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+	id 'jacoco'
+	id 'com.github.spotbugs' version '4.6.0'
+	id 'org.owasp.dependencycheck' version '6.5.0.1'
+}
+
+group = 'uk.nhs.prm.repo'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+//Without this task two jars are built, the additional "-plain.jar" is not needed
+// for more details refer to: https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#packaging-executable.and-plain-archives
+jar {
+	enabled = false
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-test'
+}
+
+test {
+	useJUnitPlatform()
+}
+
+test.outputs.upToDateWhen {false}
+
+sourceSets {
+	integration {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+configurations {
+	integrationImplementation.extendsFrom testImplementation
+	integrationRuntime.extendsFrom testRuntime
+}
+
+tasks.withType(Test) {
+	useJUnitPlatform()
+}
+
+task integration(type: Test) {
+	testClassesDirs = sourceSets.integration.output.classesDirs
+	classpath = sourceSets.integration.runtimeClasspath
+	mustRunAfter tasks.test
+}
+
+integration.outputs.upToDateWhen {false}
+
+jacocoTestReport {
+	dependsOn test // tests are required to run before generating the report
+	shouldRunAfter integration
+}
+
+jacocoTestCoverageVerification {
+	dependsOn jacocoTestReport
+
+	violationRules {
+		rule {
+			limit {
+				minimum = 0.0
+			}
+		}
+	}
+
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: '**/model/**')
+		}))
+	}
+}
+
+spotbugsMain {
+	reports {
+		html {
+			enabled = true
+			destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+			stylesheet = 'fancy-hist.xsl'
+		}
+	}
+}
+
+spotbugsTest {
+	reports {
+		html {
+			enabled = true
+			destination = file("$buildDir/reports/spotbugs/test/spotbugs.html")
+			stylesheet = 'fancy-hist.xsl'
+		}
+	}
+}
+
+spotbugsIntegration {
+	reports {
+		html {
+			enabled = true
+			destination = file("$buildDir/reports/spotbugs/integration/spotbugs.html")
+			stylesheet = 'fancy-hist.xsl'
+		}
+	}
+}
+
+dependencyCheck {
+	failBuildOnCVSS = 7
+	suppressionFile = './dependency-checks-suppression.xml'
+}
+
+check.dependsOn integration
+
