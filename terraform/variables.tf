@@ -8,6 +8,8 @@ variable "repo_name" {
   default = "prm-repo-gp-registrations-mi-forwarder"
 }
 
+variable "service_desired_count" {}
+
 variable "environment" {}
 
 variable "component_name" {
