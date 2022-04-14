@@ -1,4 +1,4 @@
-package metrics;
+package uk.nhs.prm.repo.gpregistrationsmiforwarder.metrics;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

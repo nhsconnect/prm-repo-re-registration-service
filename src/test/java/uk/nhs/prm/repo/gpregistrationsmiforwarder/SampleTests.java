@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.prmrepogpregistrationsmiforwarder;
+package uk.nhs.prm.repo.gpregistrationsmiforwarder;
 
 import org.junit.jupiter.api.Test;
 
