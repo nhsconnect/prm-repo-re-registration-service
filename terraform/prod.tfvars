@@ -1,2 +1,1 @@
-environment    = "prod"
-service_desired_count = 3
+environment = "prod"

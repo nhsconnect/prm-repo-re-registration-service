@@ -1,2 +1,1 @@
-environment    = "dev"
-service_desired_count = 1
+environment = "dev"

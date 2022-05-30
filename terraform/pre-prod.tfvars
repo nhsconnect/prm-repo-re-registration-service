@@ -1,2 +1,1 @@
-environment    = "pre-prod"
-service_desired_count = 3
+environment = "pre-prod"

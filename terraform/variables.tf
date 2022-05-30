@@ -4,11 +4,13 @@ variable "region" {
 }
 
 variable "repo_name" {
-  type = string
+  type    = string
   default = "prm-repo-re-registration-service"
 }
 
-variable "service_desired_count" {}
+variable "service_desired_count" {
+  default = 1
+}
 
 variable "environment" {}
 
@@ -26,6 +28,6 @@ variable "task_memory" {
 }
 
 variable "log_level" {
-  type = string
+  type    = string
   default = "debug"
 }
