@@ -75,14 +75,14 @@ common:
         jobs:
           deploy: *deploy_job
 pipelines:
-  'prm-repo-gp-registrations-mi-forwarder.dev':
-    group: deductions
-    label_template: '${git[:8]}'
+  re-registration-service.dev:
+    group: repository
+    label_template: '${COUNT}-${git[:8]}'
     materials:
       git:
         type: configrepo
       app:
-        pipeline: prm-repo-gp-registrations-mi-forwarder
+        pipeline: re-registration-service
         stage: docker
       base_infra:
         pipeline: prm-deductions-infra
@@ -91,80 +91,80 @@ pipelines:
       NHS_ENVIRONMENT: dev
     stages: *common_stages
 
-  'prm-repo-gp-registrations-mi-forwarder.test':
-    group: deductions
-    label_template: '${git[:8]}'
+  re-registration-service.test:
+    group: repository
+    label_template: '${COUNT}-${git[:8]}'
     materials:
       git:
         type: configrepo
       app:
-        pipeline: prm-repo-gp-registrations-mi-forwarder
+        pipeline: re-registration-service
         stage: docker
       base_infra:
         pipeline: prm-deductions-infra
         stage: deploy_test
       dev_env:
-        pipeline: prm-repo-gp-registrations-mi-forwarder.dev
+        pipeline: re-registration-service.dev
         stage: deploy
     environment_variables:
       NHS_ENVIRONMENT: test
     stages: *common_stages
 
-  'prm-repo-gp-registrations-mi-forwarder.pre-prod':
-    group: deductions
-    label_template: '${git[:8]}'
+  re-registration-service.pre-prod:
+    group: repository
+    label_template: '${COUNT}-${git[:8]}'
     materials:
       git:
         type: configrepo
       app:
-        pipeline: prm-repo-gp-registrations-mi-forwarder
+        pipeline: re-registration-service
         stage: docker
       base_infra:
         pipeline: prm-deductions-infra
         stage: deploy_pre_prod
       test_env:
-        pipeline: prm-repo-gp-registrations-mi-forwarder.test
+        pipeline: re-registration-service.test
         stage: deploy
     environment_variables:
       NHS_ENVIRONMENT: pre-prod
     stages: *common_stages
 
-#  'prm-repo-gp-registrations-mi-forwarder.perf':
-#    group: deductions
-#    label_template: '${git[:8]}'
-#    materials:
-#      git:
-#        type: configrepo
-#      app:
-#        pipeline: prm-repo-gp-registrations-mi-forwarder
-#        stage: docker
-#      base_infra:
-#        pipeline: prm-deductions-infra
-#        stage: deploy_perf
-#      test_env:
-#        pipeline: prm-repo-gp-registrations-mi-forwarder.test
-#        stage: deploy
-#      e2e:
-#        pipeline: continuity-e2e-tests.test
-#        stage: test
-#    environment_variables:
-#      NHS_ENVIRONMENT: perf
-#    stages: *common_stages
-
-  'prm-repo-gp-registrations-mi-forwarder.prod':
-    group: deductions
-    label_template: '${git[:8]}'
+  re-registration-service.perf:
+    group: repository
+    label_template: '${COUNT}-${git[:8]}'
     materials:
       git:
         type: configrepo
       app:
-        pipeline: prm-repo-gp-registrations-mi-forwarder
+        pipeline: re-registration-service
+        stage: docker
+      base_infra:
+        pipeline: prm-deductions-infra
+        stage: deploy_perf
+      test_env:
+        pipeline: re-registration-service.test
+        stage: deploy
+      e2e:
+        pipeline: continuity-e2e-tests.test
+        stage: test
+    environment_variables:
+      NHS_ENVIRONMENT: perf
+    stages: *common_stages
+
+  re-registration-service.prod:
+    group: repository
+    label_template: '${COUNT}-${git[:8]}'
+    materials:
+      git:
+        type: configrepo
+      app:
+        pipeline: re-registration-service
         stage: docker
       base_infra:
         pipeline: prm-deductions-infra
         stage: deploy_prod
       pre-prod_env:
-        pipeline: prm-repo-gp-registrations-mi-forwarder.pre-prod
+        pipeline: re-registration-service.pre-prod
         stage: deploy
     environment_variables:
       NHS_ENVIRONMENT: prod

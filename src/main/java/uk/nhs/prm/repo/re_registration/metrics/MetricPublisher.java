@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.gpregistrationsmiforwarder.metrics;
+package uk.nhs.prm.repo.re_registration.metrics;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -43,7 +43,7 @@ public class MetricPublisher {
         PutMetricDataRequest request =
                 PutMetricDataRequest
                         .builder()
-                        .namespace("GpRegistrationsMiForwarder")
+                        .namespace("ReRegistrationService")
                         .metricData(datum)
                         .build();
 

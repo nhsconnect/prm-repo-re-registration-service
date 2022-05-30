@@ -5,7 +5,7 @@ variable "region" {
 
 variable "repo_name" {
   type = string
-  default = "prm-repo-gp-registrations-mi-forwarder"
+  default = "prm-repo-re-registration-service"
 }
 
 variable "service_desired_count" {}
@@ -13,7 +13,7 @@ variable "service_desired_count" {}
 variable "environment" {}
 
 variable "component_name" {
-  default = "gp-registrations-mi-forwarder"
+  default = "re-registration-service"
 }
 
 variable "task_image_tag" {}

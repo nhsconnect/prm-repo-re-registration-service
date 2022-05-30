@@ -7,8 +7,8 @@ set -Eeo pipefail
 ###########################
 
 AWS_DEFAULT_REGION=eu-west-2
-IMAGE_REPO_NAME=repo/gp-registrations-mi-forwarder
-export NHS_SERVICE=gp-registrations-mi-forwarder
+export NHS_SERVICE=re-registration
+IMAGE_REPO_NAME=$NHS_SERVICE
 AWS_HELPERS_VERSION=0.2.27
 echo "AWS helper scripts version: $AWS_HELPERS_VERSION"
 

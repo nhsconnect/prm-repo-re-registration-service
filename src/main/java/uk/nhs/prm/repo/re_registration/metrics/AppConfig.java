@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.gpregistrationsmiforwarder.metrics;
+package uk.nhs.prm.repo.re_registration.metrics;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

@@ -1,5 +1,5 @@
-# prm-repo-gp-registrations-mi-forwarder
+# re-registration-service
 
-Adaptor service to interact with GP2GP MI Spec
+Handles re-registration of patients after being suspended.
 
-sample commit change
+Maintained by the Patient Record Migrations (PRM) Repository team.

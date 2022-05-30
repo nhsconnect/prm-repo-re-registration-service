@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.gpregistrationsmiforwarder.metrics;
+package uk.nhs.prm.repo.re_registration.metrics;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +33,7 @@ public class HealthCheckStatusPublisher {
     }
 
     private boolean allProbesHealthy() {
-        //until adding  some other component we can initially return true.
-        return true;
+       return true;
     }
 
 }

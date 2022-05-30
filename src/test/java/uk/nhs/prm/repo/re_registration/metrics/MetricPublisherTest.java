@@ -1,4 +1,4 @@
-package metrics;
+package uk.nhs.prm.repo.re_registration.metrics;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,8 +11,8 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
-import uk.nhs.prm.repo.gpregistrationsmiforwarder.metrics.AppConfig;
-import uk.nhs.prm.repo.gpregistrationsmiforwarder.metrics.MetricPublisher;
+import uk.nhs.prm.repo.re_registration.metrics.AppConfig;
+import uk.nhs.prm.repo.re_registration.metrics.MetricPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -33,7 +33,6 @@ class MetricPublisherTest {
     @Captor
     private ArgumentCaptor<PutMetricDataRequest> putRequestCaptor;
 
-
     @Test
     public void shouldSetHealthMetricDimensionToAppropriateEnvironment() {
         when(config.environment()).thenReturn("local");
@@ -44,7 +43,7 @@ class MetricPublisherTest {
         PutMetricDataRequest putMetricDataRequest = putRequestCaptor.getValue();
         Dimension environmentDimension = putMetricDataRequest.metricData().get(0).dimensions().get(0);
 
-        assertThat(putMetricDataRequest.namespace()).isEqualTo("GpRegistrationsMiForwarder");
+        assertThat(putMetricDataRequest.namespace()).isEqualTo("ReRegistrationService");
         assertThat(environmentDimension.name()).isEqualTo("Environment");
         assertThat(environmentDimension.value()).isEqualTo("local");
     }

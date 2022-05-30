@@ -1,12 +1,12 @@
-package metrics;
+package uk.nhs.prm.repo.re_registration.metrics;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.nhs.prm.repo.gpregistrationsmiforwarder.metrics.HealthCheckStatusPublisher;
-import uk.nhs.prm.repo.gpregistrationsmiforwarder.metrics.MetricPublisher;
+import uk.nhs.prm.repo.re_registration.metrics.HealthCheckStatusPublisher;
+import uk.nhs.prm.repo.re_registration.metrics.MetricPublisher;
 
 import static org.mockito.Mockito.*;
 
