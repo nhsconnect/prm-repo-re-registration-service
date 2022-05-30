@@ -52,7 +52,11 @@ function check_env {
 }
 
 function set_image_tag() {
-  export IMAGE_TAG=$(git rev-parse HEAD | cut -c 1-8)
+  if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
+    export IMAGE_TAG=${GO_PIPELINE_LABEL:-$(git rev-parse HEAD | cut -c 1-8)}
+  else
+    export IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
+  fi
 }
 
 function get_aws_account_id {
@@ -82,14 +86,7 @@ function tf_init {
 function tf_plan {
   operation=$1
 
-  if [[ -z "${IMAGE_TAG}" ]]; then
-    if [[ -z "${GO_DEPENDENCY_LABEL_APP}" ]]; then
-      set_image_tag
-    else
-      IMAGE_TAG=${GO_DEPENDENCY_LABEL_APP}
-    fi
-  fi
-
+  set_image_tag
   tf_init
 
   terraform get # modules
@@ -150,7 +147,7 @@ case "${command}" in
       configure_docker_repository_uri
       fetch_redaction_utils
       build_docker_image
-      echo "Pushing the Docker image... $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG"
+      echo "Pushing the Docker image... $REPOSITORY_URI:$IMAGE_TAG"
       docker push $REPOSITORY_URI:$IMAGE_TAG
       ;;
   _build)
