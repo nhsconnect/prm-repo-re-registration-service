@@ -11,3 +11,7 @@ data "aws_ssm_parameter" "deductions_private_vpc_id" {
 data "aws_ssm_parameter" "deductions_private_private_subnets" {
   name = "/repo/${var.environment}/output/prm-deductions-infra/deductions-private-private-subnets"
 }
+
+data "aws_ssm_parameter" "re_registrations_kms_key_id" {
+  name = "/repo/${var.environment}/output/prm-deductions-nems-event-processor/re-registrations-kms-key-id"
+}
