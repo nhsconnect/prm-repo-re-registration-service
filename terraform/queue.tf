@@ -17,3 +17,10 @@ resource "aws_sqs_queue" "re_registrations" {
     Environment = var.environment
   }
 }
+
+resource "aws_sns_topic_subscription" "re_registrations_topic_sub" {
+  protocol             = "sqs"
+  raw_message_delivery = true
+  topic_arn            = data.aws_ssm_parameter.re_registrations_sns_topic_arn.value
+  endpoint             = aws_sqs_queue.re_registrations.arn
+}

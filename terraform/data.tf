@@ -15,3 +15,7 @@ data "aws_ssm_parameter" "deductions_private_private_subnets" {
 data "aws_ssm_parameter" "re_registrations_kms_key_id" {
   name = "/repo/${var.environment}/output/prm-deductions-nems-event-processor/re-registrations-kms-key-id"
 }
+
+data "aws_ssm_parameter" "re_registrations_sns_topic_arn" {
+  name = "/repo/${var.environment}/output/nems-event-processor/re-registrations-sns-topic-arn"
+}
