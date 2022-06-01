@@ -157,3 +157,33 @@ data "aws_iam_policy_document" "sns_service_assume_role_policy" {
     }
   }
 }
+
+resource "aws_sqs_queue_policy" "re_registrations_queue_policy" {
+  queue_url = aws_sqs_queue.re_registrations.id
+  policy    = data.aws_iam_policy_document.re_registrations_sns_topic_access_to_queue.json
+}
+
+data "aws_iam_policy_document" "re_registrations_sns_topic_access_to_queue" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage"
+    ]
+
+    principals {
+      identifiers = ["sns.amazonaws.com"]
+      type        = "Service"
+    }
+
+    resources = [
+      aws_sqs_queue.re_registrations.arn
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      values   = [data.aws_ssm_parameter.re_registrations_sns_topic_arn.value]
+      variable = "aws:SourceArn"
+    }
+  }
+}
