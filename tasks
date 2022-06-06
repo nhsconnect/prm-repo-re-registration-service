@@ -204,10 +204,10 @@ case "${command}" in
       dojo -c Dojofile-itest "./tasks _test_coverage"
       ;;
   _code_quality)
-      die_localstack_die
       gradle check -x test -x integration
       ;;
   code_quality)
+      die_localstack_die
       dojo -c Dojofile-itest "./tasks _code_quality"
       ;;
   _test_all)
