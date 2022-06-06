@@ -9,13 +9,19 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 public class AppConfig {
 
     private final String environment;
+    private final String reRegistrationsQueueName;
 
-    public AppConfig(@Value("${environment}") String environment) {
+    public AppConfig(@Value("${environment}") String environment, @Value("${aws.reRegistrationsQueueName}") String reRegistrationsQueueName) {
         this.environment = environment;
+        this.reRegistrationsQueueName = reRegistrationsQueueName;
     }
 
     public String environment() {
         return environment;
+    }
+
+    public String reRegistrationsQueueName() {
+        return reRegistrationsQueueName;
     }
 
     @Bean

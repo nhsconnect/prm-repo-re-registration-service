@@ -5,6 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import uk.nhs.prm.repo.re_registration.metrics.healthprobes.HealthProbe;
+
+import java.util.List;
 
 
 @Component
@@ -17,10 +20,12 @@ public class HealthCheckStatusPublisher {
     public static final String HEALTH_METRIC_NAME = "Health";
 
     private final MetricPublisher metricPublisher;
+    private List<HealthProbe> allHealthProbes;
 
     @Autowired
-    public HealthCheckStatusPublisher(MetricPublisher metricPublisher) {
+    public HealthCheckStatusPublisher(MetricPublisher metricPublisher, List<HealthProbe> allHealthProbes) {
         this.metricPublisher = metricPublisher;
+        this.allHealthProbes = allHealthProbes;
     }
 
     @Scheduled(fixedRate = MINUTE_INTERVAL)
@@ -33,7 +38,14 @@ public class HealthCheckStatusPublisher {
     }
 
     private boolean allProbesHealthy() {
-       return true;
+        boolean allProbesHealthy = true;
+        for (HealthProbe healthProbe : allHealthProbes) {
+            if (!healthProbe.isHealthy()) {
+                allProbesHealthy = false;
+                break;
+            }
+        }
+        return allProbesHealthy;
     }
 
 }
