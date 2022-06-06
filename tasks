@@ -65,8 +65,13 @@ function get_aws_account_id {
 
 function configure_envs {
   export AWS_REGION=${AWS_DEFAULT_REGION}
+  export LOCALSTACK_URL="http://localstack:4566"
 }
 
+function use_fake_aws_creds_for_localstack {
+  export AWS_ACCESS_KEY_ID=fake-key-id
+  export AWS_SECRET_ACCESS_KEY=fake-key
+}
 
 #######################
 # Terraform Functions #
@@ -131,6 +136,21 @@ function build_docker_image() {
   echo Build completed on `date`
 }
 
+function die_localstack_die {
+  echo docker processes running: $(docker ps)
+
+  DOCKER_CONTAINERS_ON_PORT=$(docker ps --filter publish=4566 -q)
+
+  echo docker processes running on expected localstack port: $DOCKER_CONTAINERS_ON_PORT
+
+  if [ -z "$DOCKER_CONTAINERS_ON_PORT" ]; then
+    echo no localstack nonsense going on, cool
+  else
+    echo trying to kill localstack...
+    docker stop $DOCKER_CONTAINERS_ON_PORT
+  fi
+}
+
 
 ###########
 ## TASKS ##
@@ -140,6 +160,9 @@ command="$1"
 case "${command}" in
   fetch_utils)
       fetch_redaction_utils
+      ;;
+  die_localstack_die)
+      die_localstack_die
       ;;
   build_docker)
       configure_envs
@@ -168,6 +191,8 @@ case "${command}" in
       ;;
   test_integration)
       configure_envs
+      use_fake_aws_creds_for_localstack
+      die_localstack_die
       dojo -c Dojofile-itest "./tasks _test_integration"
       ;;
   _test_coverage)
@@ -175,9 +200,11 @@ case "${command}" in
       ;;
   test_coverage)
       configure_envs
+      die_localstack_die
       dojo -c Dojofile-itest "./tasks _test_coverage"
       ;;
   _code_quality)
+      die_localstack_die
       gradle check -x test -x integration
       ;;
   code_quality)
@@ -188,7 +215,16 @@ case "${command}" in
       ;;
   test_all)
       configure_envs
+      use_fake_aws_creds_for_localstack
+      die_localstack_die
       dojo -c Dojofile-itest "./tasks _test_all"
+      ;;
+  run_local)
+      configure_envs
+      ./gradlew bootRun
+      ;;
+  run_localstack_local)
+      docker-compose -f docker-compose.localstack-local.yaml up -d
       ;;
   _dep)
       gradle dependencyCheckAnalyze

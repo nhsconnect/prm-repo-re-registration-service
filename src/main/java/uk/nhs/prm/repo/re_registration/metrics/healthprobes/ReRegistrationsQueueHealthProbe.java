@@ -22,7 +22,17 @@ public class ReRegistrationsQueueHealthProbe implements HealthProbe {
 
     @Override
     public boolean isHealthy() {
-        return true;
+        try {
+            var queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName()).build()).queueUrl();
+            sqsClient.getQueueAttributes(GetQueueAttributesRequest.builder().queueUrl(queueUrl).build());
+            return true;
+        } catch (RuntimeException exception) {
+            log.info("Failed to query SQS queue: " + queueName(), exception);
+            return false;
+        }
     }
 
+    private String queueName() {
+        return config.reRegistrationsQueueName();
+    }
 }
