@@ -187,3 +187,48 @@ data "aws_iam_policy_document" "re_registrations_sns_topic_access_to_queue" {
     }
   }
 }
+
+resource "aws_iam_role_policy_attachment" "re_registrations_processor_sqs" {
+  role       = aws_iam_role.component-ecs-role.name
+  policy_arn = aws_iam_policy.re_registrations_processor_sqs.arn
+}
+
+resource "aws_iam_policy" "re_registrations_processor_sqs" {
+  name   = "${var.environment}-${var.component_name}-sqs"
+  policy = data.aws_iam_policy_document.sqs_re_registrations_ecs_task.json
+}
+
+data "aws_iam_policy_document" "sqs_re_registrations_ecs_task" {
+  statement {
+    actions = [
+      "sqs:GetQueue*",
+      "sqs:ChangeMessageVisibility",
+      "sqs:DeleteMessage",
+      "sqs:ReceiveMessage"
+    ]
+    resources = [
+      aws_sqs_queue.re_registrations.arn
+    ]
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "re_registrations_kms" {
+  role       = aws_iam_role.component-ecs-role.name
+  policy_arn = aws_iam_policy.re_registrations_kms.arn
+}
+
+resource "aws_iam_policy" "re_registrations_kms" {
+  name   = "${var.environment}-${var.component_name}-kms"
+  policy = data.aws_iam_policy_document.kms_policy_doc.json
+}
+
+data "aws_iam_policy_document" "kms_policy_doc" {
+  statement {
+    actions = [
+      "kms:*"
+    ]
+    resources = [
+      "*"
+    ]
+  }
+}
