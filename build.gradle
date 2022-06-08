@@ -34,6 +34,7 @@ dependencies {
     implementation 'software.amazon.awssdk:sqs:2.17.73'
     implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:1.0.8'
     implementation group: 'javax.inject', name: 'javax.inject', version: '1'
+    implementation 'org.springframework:spring-jms:5.3.19'
 
     // force log4j related jars beyond log4shell vulnerability to ensure no false positives
     implementation 'org.apache.logging.log4j:log4j-api:2.17.2'
@@ -46,6 +47,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-test'
 
     testImplementation "org.mockito:mockito-core:3.+"
+    testImplementation 'com.github.tomakehurst:wiremock-jre8:2.31.0'
+    testImplementation 'org.awaitility:awaitility:3.0.0'
 }
 
 test {
@@ -58,6 +61,8 @@ sourceSets {
     integration {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
+        compileClasspath += sourceSets.test.output
+        runtimeClasspath += sourceSets.test.output
     }
 }
 
