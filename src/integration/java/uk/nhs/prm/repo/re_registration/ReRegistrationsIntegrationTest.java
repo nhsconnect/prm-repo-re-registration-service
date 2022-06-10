@@ -1,5 +1,9 @@
 package uk.nhs.prm.repo.re_registration;
 
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.model.CreateQueueRequest;
+import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,11 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.*;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
 import uk.nhs.prm.repo.re_registration.logging.TestLogAppender;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +29,7 @@ import static org.awaitility.Awaitility.await;
 public class ReRegistrationsIntegrationTest {
 
     @Autowired
-    private SqsClient sqsClient;
+    private AmazonSQSAsync amazonSQSAsync;
 
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
@@ -37,7 +40,12 @@ public class ReRegistrationsIntegrationTest {
     }
 
     private void createQueue(String queueName) {
-        sqsClient.createQueue(CreateQueueRequest.builder().queueName(queueName).build());
+        CreateQueueRequest createQueueRequest = new CreateQueueRequest();
+        createQueueRequest.setQueueName(queueName);
+        HashMap<String, String> attributes = new HashMap<>();
+        createQueueRequest.withAttributes(attributes);
+        amazonSQSAsync.createQueue(reRegistrationsQueueName);
+
     }
 
     @Test
@@ -63,24 +71,21 @@ public class ReRegistrationsIntegrationTest {
 
 
     private void sendMessage(String queueName, String messageBody) {
-        var sendMsgRequest = SendMessageRequest.builder()
-                .queueUrl(getQueueUrl(queueName))
-                .messageBody(messageBody)
-                .build();
-        sqsClient.sendMessage(sendMsgRequest);
+        var queueUrl = getQueueUrl(queueName);
+        amazonSQSAsync.sendMessage(queueUrl, messageBody);
     }
 
     private String getQueueUrl(String queueName) {
-        return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).queueUrl();
+        return amazonSQSAsync.getQueueUrl(queueName).getQueueUrl();
     }
 
     @Test
     private List<Message> receiveMessages(String queueName) {
-        var receiveRequest = ReceiveMessageRequest.builder()
-                .queueUrl(getQueueUrl(queueName))
-                .build();
+        String queueUrl = amazonSQSAsync.getQueueUrl(queueName).getQueueUrl();
 
-        return sqsClient.receiveMessage(receiveRequest).messages();
+        var receiveMessageRequest = new ReceiveMessageRequest().withQueueUrl(queueUrl);
+        var messages = amazonSQSAsync.receiveMessage(receiveMessageRequest).getMessages();
+        return messages;
     }
 
 }

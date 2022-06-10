@@ -1,6 +1,7 @@
 package uk.nhs.prm.repo.re_registration.config;
 
 import com.amazon.sqs.javamessaging.ProviderConfiguration;
+import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazon.sqs.javamessaging.SQSSession;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
@@ -10,13 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.AsyncTaskExecutor;
-import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
-import org.springframework.jms.config.SimpleJmsListenerEndpoint;
-import org.springframework.jms.listener.DefaultMessageListenerContainer;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import uk.nhs.prm.repo.re_registration.listener.ReRegistrationsEventListener;
 import uk.nhs.prm.repo.re_registration.listener.ReRegistrationsProcessor;
+
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+import javax.jms.Session;
 
 @Configuration
 @RequiredArgsConstructor
@@ -26,20 +26,8 @@ public class SqsListenerSpringConfiguration {
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
 
-    @Value("${reRegistrations.concurrency.min.max}")
-    private String concurrencyMinMax;
-
-    @Value("${reRegistrations.concurrency.max.messages.per.task}")
-    private Integer maxMessagesPerTask;
-
-    @Value("${reRegistrations.thread.core.pool.size}")
-    private Integer threadCorePoolSize;
-
-    @Value("${reRegistrations.thread.max.pool.size}")
-    private Integer threadMaxPoolSize;
-
-    private final ReRegistrationsProcessor reRegistrationsProcessor;
     private final Tracer tracer;
+    private final ReRegistrationsProcessor reRegistrationsProcessor;
 
     @Bean
     public AmazonSQSAsync amazonSQSAsync() {
@@ -47,32 +35,21 @@ public class SqsListenerSpringConfiguration {
     }
 
     @Bean
-    public DefaultMessageListenerContainer jmsListener(DefaultJmsListenerContainerFactory jmsListenerContainerFactory) {
-        SimpleJmsListenerEndpoint simpleJmsListenerEndpoint = new SimpleJmsListenerEndpoint();
-        simpleJmsListenerEndpoint.setMessageListener(new ReRegistrationsEventListener(tracer, reRegistrationsProcessor));
-        simpleJmsListenerEndpoint.setDestination(reRegistrationsQueueName);
-        return jmsListenerContainerFactory.createListenerContainer(simpleJmsListenerEndpoint);
+    public SQSConnection createConnection(AmazonSQSAsync amazonSQSAsync) throws JMSException {
+        SQSConnectionFactory connectionFactory = new SQSConnectionFactory(new ProviderConfiguration(), amazonSQSAsync);
+        return connectionFactory.createConnection();
     }
 
     @Bean
-    public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(AmazonSQSAsync amazonSQS) {
-        ProviderConfiguration providerConfiguration = new ProviderConfiguration().withNumberOfMessagesToPrefetch(0);
-        SQSConnectionFactory connectionFactory = new SQSConnectionFactory(providerConfiguration, amazonSQS);
-        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-        factory.setConcurrency(concurrencyMinMax);
-        factory.setSessionAcknowledgeMode(SQSSession.UNORDERED_ACKNOWLEDGE);
-        factory.setTaskExecutor(createDefaultTaskExecutor());
-        factory.setMaxMessagesPerTask(maxMessagesPerTask);
-        factory.setConnectionFactory(connectionFactory);
-        return factory;
-    }
+    public Session createListeners(SQSConnection connection) throws JMSException {
+        Session session = connection.createSession(false, SQSSession.UNORDERED_ACKNOWLEDGE);
+        log.info("Re-registrations event queue name : {}", reRegistrationsQueueName);
+        MessageConsumer consumer = session.createConsumer(session.createQueue(reRegistrationsQueueName));
 
-    protected AsyncTaskExecutor createDefaultTaskExecutor() {
-        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-        threadPoolTaskExecutor.setThreadNamePrefix("SQSExecutor - ");
-        threadPoolTaskExecutor.setCorePoolSize(threadCorePoolSize);
-        threadPoolTaskExecutor.setMaxPoolSize(threadMaxPoolSize);
-        threadPoolTaskExecutor.afterPropertiesSet();
-        return threadPoolTaskExecutor;
+        consumer.setMessageListener(new ReRegistrationsEventListener(tracer, reRegistrationsProcessor));
+
+        connection.start();
+
+        return session;
     }
 }
