@@ -1,5 +1,6 @@
 locals {
   re_registration_service_metric_namespace = "ReRegistrationService"
+  error_logs_metric_name              = "ErrorCountInLogs"
 }
 
 resource "aws_cloudwatch_log_group" "log_group" {
@@ -26,4 +27,16 @@ resource "aws_cloudwatch_metric_alarm" "health_metric_failure_alarm" {
     "Environment" = var.environment
   }
   alarm_actions             = [data.aws_sns_topic.alarm_notifications.arn]
+}
+resource "aws_cloudwatch_log_metric_filter" "log_metric_filter" {
+  name           = "${var.environment}-${var.component_name}-error-logs"
+  pattern        = "{ $.level = \"ERROR\" }"
+  log_group_name = aws_cloudwatch_log_group.log_group.name
+
+  metric_transformation {
+    name          = local.error_logs_metric_name
+    namespace     = local.re_registration_service_metric_namespace
+    value         = 1
+    default_value = 0
+  }
 }
