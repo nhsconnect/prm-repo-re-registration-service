@@ -19,3 +19,11 @@ data "aws_ssm_parameter" "re_registrations_kms_key_id" {
 data "aws_ssm_parameter" "re_registrations_sns_topic_arn" {
   name = "/repo/${var.environment}/output/nems-event-processor/re-registrations-sns-topic-arn"
 }
+
+data "aws_ssm_parameter" "pds_adaptor_service_url" {
+  name = "/repo/${var.environment}/output/prm-deductions-pds-adaptor/service-url"
+}
+
+data "aws_ssm_parameter" "pds_adaptor_auth_password" {
+  name = "/repo/${var.environment}/user-input/api-keys/pds-adaptor/re-registration-service"
+}

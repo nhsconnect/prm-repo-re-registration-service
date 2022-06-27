@@ -3,6 +3,7 @@ package uk.nhs.prm.repo.re_registration.http;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 public class HttpClient {
@@ -13,8 +14,8 @@ public class HttpClient {
         this.restTemplate = restTemplate;
     }
 
-    public void makeAGetCall(String uri){
-        var exchange = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(getHeaders()), String.class);
+    public ResponseEntity<String> get(String uri, String userName, String password) {
+        return restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(getHeaders()), String.class);
     }
 
     private HttpHeaders getHeaders() {
