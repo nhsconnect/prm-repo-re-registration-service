@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.re_registration;
+package uk.nhs.prm.repo.re_registration.model;
 
 import com.google.gson.GsonBuilder;
 import lombok.AllArgsConstructor;

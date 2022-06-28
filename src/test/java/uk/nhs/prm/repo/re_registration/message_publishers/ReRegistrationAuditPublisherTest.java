@@ -1,0 +1,32 @@
+package uk.nhs.prm.repo.re_registration.message_publishers;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
+
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class ReRegistrationAuditPublisherTest {
+
+    @Mock
+    MessagePublisher messagePublisher;
+
+    private final static String reRegistrationTopicArn = "reRegistrationTopicArn";
+
+    ReRegistrationAuditPublisher reRegistrationAuditPublisher;
+
+    @BeforeEach
+    void setUp() {
+        reRegistrationAuditPublisher = new ReRegistrationAuditPublisher(reRegistrationTopicArn, messagePublisher);
+    }
+
+    @Test
+    void shouldSendMessageToRegistrationAuditTopic(){
+        reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage("nemsMessageId","status"));
+        verify(messagePublisher).sendMessage(reRegistrationTopicArn,"{\"nemsMessageId\":\"nemsMessageId\",\"status\":\"status\"}");
+    }
+}
