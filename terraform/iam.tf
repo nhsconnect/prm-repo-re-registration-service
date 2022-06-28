@@ -109,6 +109,43 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_metrics_policy_attach" {
   policy_arn = aws_iam_policy.cloudwatch_metrics_policy.arn
 }
 
+data "aws_iam_policy_document" "sns_policy_doc" {
+  statement {
+    actions = [
+      "sns:Publish"
+    ]
+    resources = [
+      aws_sns_topic.re_registration_audit_topic.arn
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "re_registration_audit_policy_doc" {
+  statement {
+
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage"
+    ]
+
+    principals {
+      identifiers = ["sns.amazonaws.com"]
+      type        = "Service"
+    }
+
+    resources = [
+      data.aws_sqs_queue.splunk_audit_uploader.arn
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      values   = [aws_sns_topic.re_registration_audit_topic.arn]
+      variable = "aws:SourceArn"
+    }
+  }
+}
+
 resource "aws_iam_role" "sns_failure_feedback_role" {
   name               = "${var.environment}-${var.component_name}-sns-failure-feedback-role"
   assume_role_policy = data.aws_iam_policy_document.sns_service_assume_role_policy.json

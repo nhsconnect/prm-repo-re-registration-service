@@ -27,3 +27,7 @@ data "aws_ssm_parameter" "pds_adaptor_service_url" {
 data "aws_ssm_parameter" "pds_adaptor_auth_password" {
   name = "/repo/${var.environment}/user-input/api-keys/pds-adaptor/re-registration-service"
 }
+
+data "aws_sqs_queue" "splunk_audit_uploader" {
+  name = "${var.environment}-splunk-audit-uploader"
+}
