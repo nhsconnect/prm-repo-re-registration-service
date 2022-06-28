@@ -13,45 +13,40 @@ import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionSta
 @Slf4j
 public class PdsAdaptorService {
     @Autowired
-    HttpClient httpClient;
+    private HttpClient httpClient;
     @Autowired
-    ReRegistrationAuditPublisher reRegistrationAuditPublisher;
+    private ReRegistrationAuditPublisher reRegistrationAuditPublisher;
 
-    String pdsAdaptorServiceUrl;
-    String authPassword;
-    String authUserName;
+    private String pdsAdaptorServiceUrl;
+    private String authPassword;
+    private String authUserName;
 
 
     public PdsAdaptorService(HttpClient httpClient,
+                             ReRegistrationAuditPublisher reRegistrationAuditPublisher,
                              @Value("${pdsAdaptor.serviceUrl}") String pdsAdaptorServiceUrl,
                              @Value("${pdsAdaptor.authPassword}") String authPassword,
-                             @Value("${pdsAdaptor.authUserName}") String authUserName,
-                             ReRegistrationAuditPublisher reRegistrationAuditPublisher) {
+                             @Value("${pdsAdaptor.authUserName}") String authUserName) {
 
         this.httpClient = httpClient;
+        this.reRegistrationAuditPublisher = reRegistrationAuditPublisher;
         this.pdsAdaptorServiceUrl = pdsAdaptorServiceUrl;
         this.authPassword = authPassword;
         this.authUserName = authUserName;
-        this.reRegistrationAuditPublisher = reRegistrationAuditPublisher;
     }
 
-    public PdsAdaptorSuspensionStatusResponse getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent) {
-        var response = httpClient.get(pdsAdaptorServiceUrl, authUserName, authPassword);
-
-        if (isSuccessful(response)) {
-            var pdsAdaptorResponse = parseToPdsAdaptorResponse(response.getBody());
-            handleEvent(pdsAdaptorResponse, reRegistrationEvent);
-            return pdsAdaptorResponse;
+    public void getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent){
+        var pdsAdaptorResponse = httpClient.get(pdsAdaptorServiceUrl, authUserName, authPassword);
+        if (isSuccessful(pdsAdaptorResponse)) {
+            var pdsAdaptorSuspensionStatusResponse = parseToPdsAdaptorResponse(pdsAdaptorResponse.getBody());
+            handleSuccessfulResponse(pdsAdaptorSuspensionStatusResponse, reRegistrationEvent);
         }
-
-        return null;
     }
 
-    private void handleEvent(PdsAdaptorSuspensionStatusResponse pdsAdaptorResponse, ReRegistrationEvent reRegistrationEvent) {
+    private void handleSuccessfulResponse(PdsAdaptorSuspensionStatusResponse pdsAdaptorResponse, ReRegistrationEvent reRegistrationEvent) {
         if(pdsAdaptorResponse.isSuspended()){
             reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),"NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
         }
-
     }
 
     private PdsAdaptorSuspensionStatusResponse parseToPdsAdaptorResponse(String responseBody) {

@@ -10,12 +10,12 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PdsAdaptorSuspensionStatusResponse {
 
-    String nhsNumber;
-    boolean isSuspended;
-    String currentOdsCode;
-    String managingOrganisation;
-    String recordETag;
-    boolean isDeceased;
+    private final String nhsNumber;
+    private final boolean isSuspended;
+    private final String currentOdsCode;
+    private final String managingOrganisation;
+    private final String recordETag;
+    private final boolean isDeceased;
 
     public PdsAdaptorSuspensionStatusResponse(@JsonProperty("nhsNumber") String nhsNumber,
                                               @JsonProperty("isSuspended") Boolean isSuspended,

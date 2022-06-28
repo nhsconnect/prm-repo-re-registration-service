@@ -12,7 +12,6 @@ import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPub
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -34,13 +33,14 @@ class PdsAdaptorServiceTest {
         verify(httpClient, times(1)).get(any(), any(), any());
     }
 
-    @Test
-    void shouldReturnPdsAdaptorResponseWhenGetPatientStatusCallReturns200HttpStatusCode() {
-        when(httpClient.get(any(), any(), any())).thenReturn(getResponseEntityForNonSuspendedPatient());
-        var patientPdsStatus = pdsAdaptorService.getPatientPdsStatus(new ReRegistrationEvent());
-
-        assertEquals("0000000000",patientPdsStatus.getNhsNumber());
-    }
+//    Test no longer needed as getPatientPdsStatus is not returning any value"
+//    @Test
+//    void shouldReturnPdsAdaptorResponseWhenGetPatientStatusCallReturns200HttpStatusCode() {
+//        when(httpClient.get(any(), any(), any())).thenReturn(getResponseEntityForNonSuspendedPatient());
+//        var patientPdsStatus = pdsAdaptorService.getPatientPdsStatus(new ReRegistrationEvent());
+//
+//        assertEquals("0000000000",patientPdsStatus.getNhsNumber());
+//    }
 
     @Test
     void shouldPublishToQueueWhenPatientIsSuspended() {

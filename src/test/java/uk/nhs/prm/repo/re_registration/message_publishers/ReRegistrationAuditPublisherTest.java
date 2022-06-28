@@ -13,15 +13,15 @@ import static org.mockito.Mockito.verify;
 class ReRegistrationAuditPublisherTest {
 
     @Mock
-    MessagePublisher messagePublisher;
+    private MessagePublisher messagePublisher;
 
     private final static String reRegistrationTopicArn = "reRegistrationTopicArn";
 
-    ReRegistrationAuditPublisher reRegistrationAuditPublisher;
+    private ReRegistrationAuditPublisher reRegistrationAuditPublisher;
 
     @BeforeEach
     void setUp() {
-        reRegistrationAuditPublisher = new ReRegistrationAuditPublisher(reRegistrationTopicArn, messagePublisher);
+        reRegistrationAuditPublisher = new ReRegistrationAuditPublisher(messagePublisher, reRegistrationTopicArn);
     }
 
     @Test

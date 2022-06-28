@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class ReRegistrationEvent {
-    String nhsNumber;
-    String newlyRegisteredOdsCode;
-    String nemsMessageId;
-    String lastUpdated;
+    private String nhsNumber;
+    private String newlyRegisteredOdsCode;
+    private String nemsMessageId;
+    private String lastUpdated;
 
 }
