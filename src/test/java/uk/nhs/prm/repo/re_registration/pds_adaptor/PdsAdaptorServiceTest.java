@@ -45,7 +45,7 @@ class PdsAdaptorServiceTest {
     @Test
     void shouldPublishToQueueWhenPatientIsSuspended() {
         when(httpClient.get(any(), any(), any())).thenReturn(getResponseEntityForSuspendedPatient());
-        var patientPdsStatus = pdsAdaptorService.getPatientPdsStatus(new ReRegistrationEvent(null,null,"nemsMessageId",null));
+        pdsAdaptorService.getPatientPdsStatus(new ReRegistrationEvent(null,null,"nemsMessageId",null));
         verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId","NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
     }
 
