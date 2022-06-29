@@ -25,18 +25,19 @@ public class PdsAdaptorService {
     public PdsAdaptorService(HttpClient httpClient,
                              ReRegistrationAuditPublisher reRegistrationAuditPublisher,
                              @Value("${pdsAdaptor.serviceUrl}") String pdsAdaptorServiceUrl,
-                             @Value("${pdsAdaptor.authPassword}") String authPassword,
-                             @Value("${pdsAdaptor.authUserName}") String authUserName) {
+                             @Value("${pdsAdaptor.authUserName}") String authUserName,
+                             @Value("${pdsAdaptor.authPassword}") String authPassword) {
 
         this.httpClient = httpClient;
         this.reRegistrationAuditPublisher = reRegistrationAuditPublisher;
         this.pdsAdaptorServiceUrl = pdsAdaptorServiceUrl;
-        this.authPassword = authPassword;
         this.authUserName = authUserName;
+        this.authPassword = authPassword;
     }
 
     public void getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent){
-        var pdsAdaptorResponse = httpClient.get(pdsAdaptorServiceUrl, authUserName, authPassword);
+        var url = getPatientUrl(reRegistrationEvent.getNhsNumber());
+        var pdsAdaptorResponse = httpClient.get(url, authUserName, authPassword);
         if (isSuccessful(pdsAdaptorResponse)) {
             var pdsAdaptorSuspensionStatusResponse = parseToPdsAdaptorResponse(pdsAdaptorResponse.getBody());
             handleSuccessfulResponse(pdsAdaptorSuspensionStatusResponse, reRegistrationEvent);
@@ -63,5 +64,9 @@ public class PdsAdaptorService {
 
     private boolean isSuccessful(org.springframework.http.ResponseEntity<String> response) {
         return response.getStatusCode().is2xxSuccessful();
+    }
+
+    private String getPatientUrl(String nhsNumber) {
+        return pdsAdaptorServiceUrl + "/" + nhsNumber;
     }
 }
