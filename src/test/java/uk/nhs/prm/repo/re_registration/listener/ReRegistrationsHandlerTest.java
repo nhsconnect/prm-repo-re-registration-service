@@ -2,34 +2,52 @@ package uk.nhs.prm.repo.re_registration.listener;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsHandler;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
+import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
 
+@ExtendWith(MockitoExtension.class)
 class ReRegistrationsHandlerTest {
 
-    private ReRegistrationsHandler processor;
+    @Mock
+    PdsAdaptorService pdsAdaptorService;
+
+    private ReRegistrationsHandler handler;
+
 
     @BeforeEach
     public void setUp() {
-        processor = new ReRegistrationsHandler();
+        handler = new ReRegistrationsHandler(pdsAdaptorService);
     }
 
     @Test
     public void shouldLogTheLengthOfMessageReceived() {
         var testLogAppender = addTestLogAppender();
 
-        processor.handle(getParsedMessage());
+        handler.handle(getParsedMessage());
 
         var loggedEvent = testLogAppender.findLoggedEvent("RECEIVED");
         assertThat(loggedEvent.getMessage()).endsWith("length: 157");
     }
 
-    private ReRegistrationEvent getParsedMessage(){
+    @Test
+    void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() {
+        var reRegistrationEvent = getParsedMessage();
+        handler.handle(reRegistrationEvent);
+        verify(pdsAdaptorService,times(1)).getPatientPdsStatus(reRegistrationEvent);
+    }
+
+    private ReRegistrationEvent getParsedMessage() {
         return new ReRegistrationEvent("1234567890", "ABC123", UUID.randomUUID().toString(), "2017-11-01T15:00:33+00:00");
     }
 }

@@ -15,6 +15,7 @@ import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
@@ -72,10 +73,17 @@ class PdsAdaptorServiceTest {
     }
 
     @Test
-    void shouldPublishStatusMessageOnAuditTopicWhenPDSReturns4xxError() {
+    void shouldPublishStatusMessageOnAuditTopicWhenPDSAdaptorReturns4xxError() {
         when(httpClient.get(any(), any(), any())).thenReturn(new ResponseEntity<>("error", HttpStatus.valueOf(400)));
         pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
         verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
+    }
+
+    @Test
+    void shouldThrowAnIntermittentErrorPdsExceptionWhenPDSAdaptorReturns5xxError() {
+        ResponseEntity<String> response = ResponseEntity.internalServerError().build();
+        when(httpClient.get(any(), any(), any())).thenReturn(response);
+        assertThrows(IntermittentErrorPdsException.class, () -> pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent()));
     }
 
     @Test
