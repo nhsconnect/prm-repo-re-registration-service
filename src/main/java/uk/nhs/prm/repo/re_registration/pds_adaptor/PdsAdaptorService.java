@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
@@ -35,34 +36,41 @@ public class PdsAdaptorService {
         this.authPassword = authPassword;
     }
 
-    public void getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent){
+    public void getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent) {
         var url = getPatientUrl(reRegistrationEvent.getNhsNumber());
         var pdsAdaptorResponse = httpClient.get(url, authUserName, authPassword);
+
         if (isSuccessful(pdsAdaptorResponse)) {
-            var pdsAdaptorSuspensionStatusResponse = parseToPdsAdaptorResponse(pdsAdaptorResponse.getBody());
-            handleSuccessfulResponse(pdsAdaptorSuspensionStatusResponse, reRegistrationEvent);
+            handleSuccessfulResponse(parseToPdsAdaptorResponse(pdsAdaptorResponse.getBody()), reRegistrationEvent);
+        } else {
+            handleUnSuccessfulResponse(pdsAdaptorResponse, reRegistrationEvent);
         }
     }
 
     private void handleSuccessfulResponse(PdsAdaptorSuspensionStatusResponse pdsAdaptorResponse, ReRegistrationEvent reRegistrationEvent) {
-        if(pdsAdaptorResponse.isSuspended()){
-            reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),"NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
+        if (pdsAdaptorResponse.isSuspended()) {
+            reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
+        } else {
+            log.info("Patient is not suspended");
+        }
+    }
+
+    private void handleUnSuccessfulResponse(ResponseEntity<String> parseToPdsAdaptorResponse, ReRegistrationEvent reRegistrationEvent) {
+        if (parseToPdsAdaptorResponse.getStatusCode().is4xxClientError()) {
+            reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
         }
     }
 
     private PdsAdaptorSuspensionStatusResponse parseToPdsAdaptorResponse(String responseBody) {
         try {
-
             return new ObjectMapper().readValue(responseBody, PdsAdaptorSuspensionStatusResponse.class);
-
         } catch (Exception e) {
-
             log.error("Encountered Exception while trying to parse pds-adaptor response");
             throw new RuntimeException(e);
         }
     }
 
-    private boolean isSuccessful(org.springframework.http.ResponseEntity<String> response) {
+    private boolean isSuccessful(ResponseEntity<String> response) {
         return response.getStatusCode().is2xxSuccessful();
     }
 

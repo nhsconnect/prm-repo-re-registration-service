@@ -14,12 +14,10 @@ import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPub
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
 
 @ExtendWith(MockitoExtension.class)
 class PdsAdaptorServiceTest {
@@ -51,7 +49,7 @@ class PdsAdaptorServiceTest {
 
     @Test
     void shouldCallHttpClientWithCorrectUriAndUserNAmeAndPassword() {
-        when(httpClient.get(any(), any(), any())).thenReturn(getResponseEntityForSuspendedPatient());
+        when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
         verify(httpClient).get(url.capture(), username.capture(), password.capture());
         assertThat("pds-service-url/1234567890").isEqualTo(url.getValue());
@@ -61,25 +59,41 @@ class PdsAdaptorServiceTest {
 
     @Test
     void shouldPublishToQueueWhenPatientIsSuspended() {
-        when(httpClient.get(any(), any(), any())).thenReturn(getResponseEntityForSuspendedPatient());
-        pdsAdaptorService.getPatientPdsStatus(new ReRegistrationEvent(null,null,"nemsMessageId",null));
-        verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId","NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
+        when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
+        pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
+        verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
     }
 
-    private ResponseEntity<String> getResponseEntityForNonSuspendedPatient() {
-        return new ResponseEntity<>(pdsResponseStringForNotSuspendedPatient(), HttpStatus.OK);
-    }
-    private ResponseEntity<String> getResponseEntityForSuspendedPatient() {
-        return new ResponseEntity<>(pdsResponseStringForSuspendedPatient(), HttpStatus.OK);
+    @Test
+    void shouldNotPublishToQueueWhenPatientIsNotSuspended() {
+        when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
+        pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
+        verify(reRegistrationAuditPublisher, times(0)).sendMessage(any());
     }
 
-    private String pdsResponseStringForNotSuspendedPatient() {
-        return "{\"nhsNumber\":\"0000000000\",\"isSuspended\":false,\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":\"managingOrganisation\",\"recordETag\":\"etag\",\"isDeceased\":false}";
+    @Test
+    void shouldPublishStatusMessageOnAuditTopicWhenPDSReturns4xxError() {
+        when(httpClient.get(any(), any(), any())).thenReturn(new ResponseEntity<>("error", HttpStatus.valueOf(400)));
+        pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
+        verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
     }
-    private String pdsResponseStringForSuspendedPatient() {
-        return "{\"nhsNumber\":\"0000000000\",\"isSuspended\":true,\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":\"managingOrganisation\",\"recordETag\":\"etag\",\"isDeceased\":false}";
+
+    @Test
+    public void shouldLogForNotSuspendedPatient() {
+        var testLogAppender = addTestLogAppender();
+        when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
+        pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
+
+        var loggedEvent = testLogAppender.findLoggedEvent("Patient is not suspended");
+        assertThat(loggedEvent).isNotNull();
     }
-    private ReRegistrationEvent getReRegistrationEvent(){
-        return new ReRegistrationEvent("1234567890", "ABC123", UUID.randomUUID().toString(), "2017-11-01T15:00:33+00:00");
+
+    private ResponseEntity<String> getPdsResponseStringWithSuspendedStatus(boolean isSuspended) {
+        var pdsResponseString = "{\"nhsNumber\":\"0000000000\",\"isSuspended\":" + isSuspended + ",\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":\"managingOrganisation\",\"recordETag\":\"etag\",\"isDeceased\":false}";
+        return new ResponseEntity<>(pdsResponseString, HttpStatus.OK);
+    }
+
+    private ReRegistrationEvent getReRegistrationEvent() {
+        return new ReRegistrationEvent("1234567890", "ABC123", "nemsMessageId", "2017-11-01T15:00:33+00:00");
     }
 }

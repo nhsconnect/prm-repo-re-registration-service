@@ -3,6 +3,7 @@ package uk.nhs.prm.repo.re_registration.listener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
+import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsHandler;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 
 import javax.jms.Message;
@@ -14,7 +15,7 @@ import javax.jms.TextMessage;
 public class ReRegistrationsEventListener implements MessageListener {
 
     private final Tracer tracer;
-    private final ReRegistrationsProcessor reRegistrationsProcessor;
+    private final ReRegistrationsHandler reRegistrationsHandler;
     private final ReRegistrationParser parser;
 
     @Override
@@ -23,7 +24,7 @@ public class ReRegistrationsEventListener implements MessageListener {
             tracer.setMDCContext(message);
             var payload = ((TextMessage) message).getText();
             var parsedMessage = parser.parse(payload);
-            reRegistrationsProcessor.process(parsedMessage);
+            reRegistrationsHandler.handle(parsedMessage);
             message.acknowledge();
             log.info("ACKNOWLEDGED: Re-registrations Event Message");
         }  catch (Exception e) {

@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
+import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsHandler;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 
@@ -24,7 +25,7 @@ class ReRegistrationsEventListenerTest {
     Tracer tracer;
 
     @Mock
-    ReRegistrationsProcessor reRegistrationsProcessor;
+    ReRegistrationsHandler reRegistrationsHandler;
 
     @Mock
     ReRegistrationParser reRegistrationParser;
@@ -53,7 +54,7 @@ class ReRegistrationsEventListenerTest {
         SQSTextMessage message = spy(new SQSTextMessage(reRegistrationMessage));
         when(reRegistrationParser.parse(any())).thenReturn(parsedMessage);
         reRegistrationsEventListener.onMessage(message);
-        verify(reRegistrationsProcessor).process(parsedMessage);
+        verify(reRegistrationsHandler).handle(parsedMessage);
         verify(message).acknowledge();
     }
 
@@ -63,7 +64,7 @@ class ReRegistrationsEventListenerTest {
         var exception = new IllegalStateException("some exception");
         var message = spy(new SQSTextMessage("not-a-re-registrations-message"));
 
-        doThrow(exception).when(reRegistrationsProcessor).process(any());
+        doThrow(exception).when(reRegistrationsHandler).handle(any());
 
         reRegistrationsEventListener.onMessage(message);
 
