@@ -23,7 +23,7 @@ public class ReRegistrationsEventListener implements MessageListener {
             tracer.setMDCContext(message);
             var payload = ((TextMessage) message).getText();
             var parsedMessage = parser.parse(payload);
-            reRegistrationsProcessor.process(payload);
+            reRegistrationsProcessor.process(parsedMessage);
             message.acknowledge();
             log.info("ACKNOWLEDGED: Re-registrations Event Message");
         }  catch (Exception e) {
