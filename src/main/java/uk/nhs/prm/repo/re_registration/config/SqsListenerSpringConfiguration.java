@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import uk.nhs.prm.repo.re_registration.listener.ReRegistrationsEventListener;
 import uk.nhs.prm.repo.re_registration.listener.ReRegistrationsProcessor;
+import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -28,6 +29,7 @@ public class SqsListenerSpringConfiguration {
 
     private final Tracer tracer;
     private final ReRegistrationsProcessor reRegistrationsProcessor;
+    private final ReRegistrationParser reRegistrationParser;
 
     @Bean
     public AmazonSQSAsync amazonSQSAsync() {
@@ -46,7 +48,7 @@ public class SqsListenerSpringConfiguration {
         log.info("Re-registrations event queue name : {}", reRegistrationsQueueName);
         MessageConsumer consumer = session.createConsumer(session.createQueue(reRegistrationsQueueName));
 
-        consumer.setMessageListener(new ReRegistrationsEventListener(tracer, reRegistrationsProcessor));
+        consumer.setMessageListener(new ReRegistrationsEventListener(tracer, reRegistrationsProcessor, reRegistrationParser));
 
         connection.start();
 

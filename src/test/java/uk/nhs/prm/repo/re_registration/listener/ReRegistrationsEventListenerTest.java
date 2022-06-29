@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
+import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 
 import javax.jms.JMSException;
 
@@ -22,6 +23,9 @@ class ReRegistrationsEventListenerTest {
 
     @Mock
     ReRegistrationsProcessor reRegistrationsProcessor;
+
+    @Mock
+    ReRegistrationParser reRegistrationParser;
 
     @InjectMocks
     private ReRegistrationsEventListener reRegistrationsEventListener;

@@ -14,9 +14,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
 import uk.nhs.prm.repo.re_registration.logging.TestLogAppender;
+import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +38,7 @@ public class ReRegistrationsIntegrationTest {
 
 
     private String getReRegistrationsEvent() {
-        return "re-registrations-event-message";
+        return new ReRegistrationEvent("1234567890", "ABC123", UUID.randomUUID().toString(), "2017-11-01T15:00:33+00:00").toJsonString();
     }
 
     private void createQueue(String queueName) {
@@ -84,8 +86,7 @@ public class ReRegistrationsIntegrationTest {
         String queueUrl = amazonSQSAsync.getQueueUrl(queueName).getQueueUrl();
 
         var receiveMessageRequest = new ReceiveMessageRequest().withQueueUrl(queueUrl);
-        var messages = amazonSQSAsync.receiveMessage(receiveMessageRequest).getMessages();
-        return messages;
+        return amazonSQSAsync.receiveMessage(receiveMessageRequest).getMessages();
     }
 
 }
