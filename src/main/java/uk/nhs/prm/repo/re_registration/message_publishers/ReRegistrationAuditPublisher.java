@@ -10,7 +10,7 @@ public class ReRegistrationAuditPublisher {
     private final MessagePublisher messagePublisher;
     private final String reRegistrationAuditTopicArn;
 
-    public ReRegistrationAuditPublisher(MessagePublisher messagePublisher, @Value("${reRegistration.auditTopic.arn}") String reRegistrationAuditTopicArn) {
+    public ReRegistrationAuditPublisher(MessagePublisher messagePublisher, @Value("${aws.reRegistration.auditTopic.arn}") String reRegistrationAuditTopicArn) {
         this.messagePublisher = messagePublisher;
         this.reRegistrationAuditTopicArn = reRegistrationAuditTopicArn;
     }

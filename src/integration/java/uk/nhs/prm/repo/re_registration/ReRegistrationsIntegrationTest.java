@@ -14,6 +14,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
 import uk.nhs.prm.repo.re_registration.logging.TestLogAppender;
+import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import java.util.HashMap;
@@ -32,6 +33,9 @@ public class ReRegistrationsIntegrationTest {
 
     @Autowired
     private AmazonSQSAsync amazonSQSAsync;
+
+    @Autowired
+    ReRegistrationAuditPublisher publisher;
 
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
