@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
@@ -40,15 +41,14 @@ public class PdsAdaptorService {
     public void getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent) {
         var url = getPatientUrl(reRegistrationEvent.getNhsNumber());
         try {
-            var pdsAdaptorResponse = httpClient.get(url, authUserName, authPassword);
+            var pdsAdaptorResponseEntity = httpClient.get(url, authUserName, authPassword);
 
-            if (isSuccessful(pdsAdaptorResponse)) {
-                handleSuccessfulResponse(parseToPdsAdaptorResponse(pdsAdaptorResponse.getBody()), reRegistrationEvent);
-            } else if (pdsAdaptorResponse.getStatusCode().is4xxClientError()) {
-                handle4xxResponse(reRegistrationEvent);
+            if (isSuccessful(pdsAdaptorResponseEntity)) {
+                var parsedPdsAdaptorResponse = getParsedPdsAdaptorReponseBody(pdsAdaptorResponseEntity.getBody());
+                handleSuccessfulResponse(parsedPdsAdaptorResponse, reRegistrationEvent);
             }
-        } catch (Exception e) {
-            throw new IntermittentErrorPdsException("Encountered error when calling pds get patient endpoint",e);
+        } catch (HttpStatusCodeException e) {
+            handleErrorResponse(reRegistrationEvent, e);
         }
     }
 
@@ -60,12 +60,18 @@ public class PdsAdaptorService {
         }
     }
 
-    private void handle4xxResponse(ReRegistrationEvent reRegistrationEvent) {
-        reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
-                "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
+    private void handleErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
+
+        if (e.getStatusCode().is4xxClientError()) {
+            reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
+                    "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
+        } else if (e.getStatusCode().is5xxServerError()) {
+            throw new IntermittentErrorPdsException("Encountered error when calling pds get patient endpoint", e);
+        }
+
     }
 
-    private PdsAdaptorSuspensionStatusResponse parseToPdsAdaptorResponse(String responseBody) {
+    private PdsAdaptorSuspensionStatusResponse getParsedPdsAdaptorReponseBody(String responseBody) {
         try {
             return new ObjectMapper().readValue(responseBody, PdsAdaptorSuspensionStatusResponse.class);
         } catch (Exception e) {

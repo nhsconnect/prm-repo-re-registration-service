@@ -35,6 +35,8 @@ import static org.awaitility.Awaitility.await;
 public class PdsAdaptorServiceIntegrationTest {
 
     public static final String NHS_NUMBER = "1234567890";
+    public static final String STATUS_MESSAGE_FOR_WHEN_PATIENT_IS_STILL_SUSPENDED = "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED";
+    public static final String STATUS_MESSAGE_FOR_WHEN_PDS_RETURNS_4XX_ERROR = "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR";
     @Autowired
     private AmazonSQSAsync sqs;
 
@@ -46,6 +48,7 @@ public class PdsAdaptorServiceIntegrationTest {
     WireMockServer stubPdsAdaptor;
     private String reRegistrationsQueueUrl;
     private String splunkAuditUploaderUrl;
+    private String nemsMessageId = "nemsMessageId";;
 
 
     @BeforeEach
@@ -69,7 +72,7 @@ public class PdsAdaptorServiceIntegrationTest {
 
     @Test
     void shouldNotPutAnythingOnReRegistrationAuditTopicWhenPdsReturnsResponseWithStatusCode500() {
-        setPds500ErrorState(NHS_NUMBER);
+        setPdsErrorStateWithStatusCode(NHS_NUMBER, 500);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()->assertThat(isQueueEmpty(splunkAuditUploaderUrl)));
     }
@@ -79,15 +82,43 @@ public class PdsAdaptorServiceIntegrationTest {
         setPds200SuccessState(NHS_NUMBER);
 
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
-        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()->assertThat(checkMessageInRelatedQueue(splunkAuditUploaderUrl)));
+
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
+            String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
+            assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PATIENT_IS_STILL_SUSPENDED);
+            assertThat(messageBody).contains(nemsMessageId);
+        }
+        );
     }
 
+    @Test
+    void shouldPutTheAuditStatusMessageOnAuditTopicWhenPdsReturnsResponseWithStatusCode400() {
+        setPdsErrorStateWithStatusCode(NHS_NUMBER, 400);
 
-    private void setPds500ErrorState(String nhsNumber) {
+        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
+                    String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
+                    assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PDS_RETURNS_4XX_ERROR);
+                    assertThat(messageBody).contains(nemsMessageId);
+                }
+        );
+    }
+
+//    @Test
+//    void shouldPutTheAuditStatusMessageOnAuditTopicWhenPdsReturnsResponseWithStatusCode200() {
+//        setPds200SuccessState(NHS_NUMBER);
+//
+//        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+//        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()->assertThat(checkMessageInRelatedQueue(splunkAuditUploaderUrl)));
+//    }
+
+
+    private void setPdsErrorStateWithStatusCode(String nhsNumber, int statusCode) {
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
                 .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
                 .willReturn(aResponse()
-                        .withStatus(500)// request unsuccessful with status code 500
+                        .withStatus(statusCode)// request unsuccessful with status code 500
                         .withHeader("Content-Type", "text/xml")
                         .withBody("<response>Some content</response>")));
     }
@@ -102,7 +133,7 @@ public class PdsAdaptorServiceIntegrationTest {
     }
 
     private ReRegistrationEvent getReRegistrationEvent() {
-        return new ReRegistrationEvent(NHS_NUMBER, "ABC123", "nemsMessageId", "2017-11-01T15:00:33+00:00");
+        return new ReRegistrationEvent(NHS_NUMBER, "ABC123", nemsMessageId, "2017-11-01T15:00:33+00:00");
     }
 
     private boolean isQueueEmpty(String queueUrl) {
