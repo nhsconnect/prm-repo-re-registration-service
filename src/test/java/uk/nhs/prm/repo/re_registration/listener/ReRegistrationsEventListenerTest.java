@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
 import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsHandler;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
-import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 
 import javax.jms.JMSException;
 import java.util.UUID;
@@ -26,9 +25,6 @@ class ReRegistrationsEventListenerTest {
 
     @Mock
     ReRegistrationsHandler reRegistrationsHandler;
-
-    @Mock
-    ReRegistrationParser reRegistrationParser;
 
     @InjectMocks
     private ReRegistrationsEventListener reRegistrationsEventListener;
@@ -50,11 +46,9 @@ class ReRegistrationsEventListenerTest {
     @Test
     void shouldAcknowledgeMessageAfterSuccessfulProcessingOfTheMessageBody() throws JMSException {
         var reRegistrationMessage = "{\"nhsNumber\":\"" + NHS_NUMBER + "\",\"newlyRegisteredOdsCode\":\"" + NEWLY_REGISTERED_ODS_CODE + "\", \"nemsMessageId\":\"" + NEMS_MESSAGE_ID + "\",\"lastUpdated\":\"" + LAST_UPDATED + "\"}";
-        var parsedMessage = getParsedMessage();
         SQSTextMessage message = spy(new SQSTextMessage(reRegistrationMessage));
-        when(reRegistrationParser.parse(any())).thenReturn(parsedMessage);
         reRegistrationsEventListener.onMessage(message);
-        verify(reRegistrationsHandler).handle(parsedMessage);
+        verify(reRegistrationsHandler).handle(reRegistrationMessage);
         verify(message).acknowledge();
     }
 
@@ -72,7 +66,7 @@ class ReRegistrationsEventListenerTest {
         verify(message, never()).acknowledge();
     }
 
-    private ReRegistrationEvent getParsedMessage(){
-        return new ReRegistrationEvent("1234567890", "ABC123", UUID.randomUUID().toString(), "2017-11-01T15:00:33+00:00");
+    private String getMessageAsJsonString(){
+        return new ReRegistrationEvent("1234567890", "ABC123", UUID.randomUUID().toString(), "2017-11-01T15:00:33+00:00").toJsonString();
     }
 }

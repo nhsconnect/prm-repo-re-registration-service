@@ -48,7 +48,7 @@ public class SqsListenerSpringConfiguration {
         log.info("Re-registrations event queue name : {}", reRegistrationsQueueName);
         MessageConsumer consumer = session.createConsumer(session.createQueue(reRegistrationsQueueName));
 
-        consumer.setMessageListener(new ReRegistrationsEventListener(tracer, reRegistrationsHandler, reRegistrationParser));
+        consumer.setMessageListener(new ReRegistrationsEventListener(tracer, reRegistrationsHandler));
 
         connection.start();
 
