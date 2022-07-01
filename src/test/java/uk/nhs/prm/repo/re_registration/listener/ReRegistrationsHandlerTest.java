@@ -56,13 +56,18 @@ class ReRegistrationsHandlerTest {
     @Test
     public void shouldLogRetryableExceptionIfIntermittentErrorPdsExceptionIsThrown() {
         var testLogAppender = addTestLogAppender();
-
         doThrow(IntermittentErrorPdsException.class).when(pdsAdaptorService).getPatientPdsStatus(any());
-
         assertThrows(IntermittentErrorPdsException.class, () -> handler.handle(getParsedMessage().toJsonString()));
 
         var loggedEvent = testLogAppender.findLoggedEvent("Caught retryable exception in ReRegistrationsHandler");
         assertThat(loggedEvent).isNotNull();
+    }
+
+    @Test
+    public void shouldRetryUpToThreeTimesWhenIntermittentErrorPdsExceptionIsThrown() {
+        doThrow(IntermittentErrorPdsException.class).when(pdsAdaptorService).getPatientPdsStatus(any());
+        assertThrows(IntermittentErrorPdsException.class, () -> handler.handle(getParsedMessage().toJsonString()));
+        verify(pdsAdaptorService, times(3)).getPatientPdsStatus(any());
     }
 
     private ReRegistrationEvent getParsedMessage() {

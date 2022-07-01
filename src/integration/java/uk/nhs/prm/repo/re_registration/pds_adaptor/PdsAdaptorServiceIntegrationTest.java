@@ -3,6 +3,7 @@ package uk.nhs.prm.repo.re_registration.pds_adaptor;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
 import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -32,6 +35,7 @@ import static org.awaitility.Awaitility.await;
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration( classes = LocalStackAwsConfig.class)
+@DirtiesContext
 public class PdsAdaptorServiceIntegrationTest {
 
     public static final String NHS_NUMBER = "1234567890";
@@ -48,7 +52,7 @@ public class PdsAdaptorServiceIntegrationTest {
     WireMockServer stubPdsAdaptor;
     private String reRegistrationsQueueUrl;
     private String splunkAuditUploaderUrl;
-    private String nemsMessageId = "nemsMessageId";;
+    private String nemsMessageId = "nemsMessageId";
 
 
     @BeforeEach
@@ -62,6 +66,7 @@ public class PdsAdaptorServiceIntegrationTest {
     public void tearDown() {
         stubPdsAdaptor.resetAll();
         stubPdsAdaptor.stop();
+        sqs.purgeQueue(new PurgeQueueRequest(splunkAuditUploaderUrl));
     }
 
     private WireMockServer initializeWebServer() {
@@ -71,10 +76,25 @@ public class PdsAdaptorServiceIntegrationTest {
     }
 
     @Test
-    void shouldNotPutAnythingOnReRegistrationAuditTopicWhenPdsReturnsResponseWithStatusCode500() {
+    void shouldRetryUpTo3TimesAndNotPutAnythingOnReRegistrationAuditTopicWhenPdsReturnsResponseWithStatusCode500() {
         setPdsErrorStateWithStatusCode(NHS_NUMBER, 500);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
-        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()->assertThat(isQueueEmpty(splunkAuditUploaderUrl)));
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()->{
+            verify(3, getRequestedFor(urlMatching("/suspended-patient-status/" + NHS_NUMBER)));
+            assertThat(isQueueEmpty(splunkAuditUploaderUrl));
+        });
+    }
+
+    @Test
+    void shouldRetryWhenPdsReturnsResponseWithStatusCode500AndPublishOnReRegistrationAuditTopicOnce200IsReturned() {
+        setPdsRetryMessage(NHS_NUMBER);
+        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
+                    verify(3, getRequestedFor(urlMatching("/suspended-patient-status/" + NHS_NUMBER)));
+                    String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
+                    assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PATIENT_IS_STILL_SUSPENDED);
+                    assertThat(messageBody).contains(nemsMessageId);
+        });
     }
 
     @Test
@@ -105,20 +125,11 @@ public class PdsAdaptorServiceIntegrationTest {
         );
     }
 
-//    @Test
-//    void shouldPutTheAuditStatusMessageOnAuditTopicWhenPdsReturnsResponseWithStatusCode200() {
-//        setPds200SuccessState(NHS_NUMBER);
-//
-//        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
-//        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()->assertThat(checkMessageInRelatedQueue(splunkAuditUploaderUrl)));
-//    }
-
-
     private void setPdsErrorStateWithStatusCode(String nhsNumber, int statusCode) {
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
                 .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
                 .willReturn(aResponse()
-                        .withStatus(statusCode)// request unsuccessful with status code 500
+                        .withStatus(statusCode)
                         .withHeader("Content-Type", "text/xml")
                         .withBody("<response>Some content</response>")));
     }
@@ -127,9 +138,35 @@ public class PdsAdaptorServiceIntegrationTest {
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
                 .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
                 .willReturn(aResponse()
-                        .withStatus(200)// request unsuccessful with status code 500
+                        .withStatus(200)
                         .withHeader("Content-Type", "text/xml")
                         .withBody(getPdsResponseString().getBody())));
+    }
+
+    private void setPdsRetryMessage(String nhsNumber) {
+        setPds500ErrorState(STARTED, "Cause Success", 1, nhsNumber);
+        setPds500ErrorState("Cause Success", "Second Cause Success", 2, nhsNumber);
+
+        stubFor(get(urlEqualTo("/suspended-patient-status/" + nhsNumber)).atPriority(3)
+                .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
+                .inScenario("Retry Scenario")
+                .whenScenarioStateIs("Second Cause Success")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(getPdsResponseString().getBody())));
+    }
+
+    private void setPds500ErrorState(String startingState, String finishedState, int priority, String nhsNumber) {
+        stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber)).atPriority(priority)
+                .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
+                .inScenario("Retry Scenario")
+                .whenScenarioStateIs(startingState)
+                .willReturn(aResponse()
+                        .withStatus(500)
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody("<response>Some content</response>"))
+                .willSetStateTo(finishedState));
     }
 
     private ReRegistrationEvent getReRegistrationEvent() {
