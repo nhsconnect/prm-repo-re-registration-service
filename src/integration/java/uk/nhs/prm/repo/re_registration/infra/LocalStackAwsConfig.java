@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -19,9 +20,11 @@ import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
+import software.amazon.awssdk.services.sqs.SqsClient;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,13 +47,13 @@ public class LocalStackAwsConfig {
     @Autowired
     private AmazonSQSAsync amazonSQSAsync;
 
-//    @Bean
-//    public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
-//        return SqsClient.builder()
-//                .credentialsProvider((() -> AwsBasicCredentials.create("FAKE", "FAKE")))
-//                .endpointOverride(new URI(localstackUrl))
-//                .build();
-//    }
+    @Bean
+    public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
+        return SqsClient.builder()
+                .credentialsProvider((() -> AwsBasicCredentials.create("FAKE", "FAKE")))
+                .endpointOverride(new URI(localstackUrl))
+                .build();
+    }
 
     @Bean
     public static AmazonSQSAsync amazonSQSAsync(@Value("${localstack.url}") String localstackUrl) {
