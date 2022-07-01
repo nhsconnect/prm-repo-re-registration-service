@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
@@ -75,14 +76,14 @@ class PdsAdaptorServiceTest {
 
     @Test
     void shouldPublishStatusMessageOnAuditTopicWhenPDSAdaptorReturns4xxError() {
-        when(httpClient.get(any(), any(), any())).thenReturn(new ResponseEntity<>("error", HttpStatus.valueOf(400)));
+        when(httpClient.get(any(), any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
         pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
         verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
     }
 
     @Test
     void shouldThrowAnIntermittentErrorPdsExceptionWhenPDSAdaptorReturns5xxError() {
-        when(httpClient.get(any(), any(), any())).thenThrow(HttpClientErrorException.class);
+        when(httpClient.get(any(), any(), any())).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
         assertThrows(IntermittentErrorPdsException.class, () -> pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent()));
     }
 
