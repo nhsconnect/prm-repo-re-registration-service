@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
@@ -81,8 +82,7 @@ class PdsAdaptorServiceTest {
 
     @Test
     void shouldThrowAnIntermittentErrorPdsExceptionWhenPDSAdaptorReturns5xxError() {
-        ResponseEntity<String> response = ResponseEntity.internalServerError().build();
-        when(httpClient.get(any(), any(), any())).thenReturn(response);
+        when(httpClient.get(any(), any(), any())).thenThrow(HttpClientErrorException.class);
         assertThrows(IntermittentErrorPdsException.class, () -> pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent()));
     }
 

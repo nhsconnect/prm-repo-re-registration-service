@@ -7,13 +7,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsHandler;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
+import uk.nhs.prm.repo.re_registration.pds_adaptor.IntermittentErrorPdsException;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +47,18 @@ class ReRegistrationsHandlerTest {
         var reRegistrationEvent = getParsedMessage();
         handler.handle(reRegistrationEvent);
         verify(pdsAdaptorService,times(1)).getPatientPdsStatus(reRegistrationEvent);
+    }
+
+    @Test
+    public void shouldLogRetryableExceptionIfIntermittentErrorPdsExceptionIsThrown() {
+        var testLogAppender = addTestLogAppender();
+
+        doThrow(IntermittentErrorPdsException.class).when(pdsAdaptorService).getPatientPdsStatus(any());
+
+        assertThrows(IntermittentErrorPdsException.class, () -> handler.handle(getParsedMessage()));
+
+        var loggedEvent = testLogAppender.findLoggedEvent("Caught retryable exception in ReRegistrationsHandler");
+        assertThat(loggedEvent).isNotNull();
     }
 
     private ReRegistrationEvent getParsedMessage() {

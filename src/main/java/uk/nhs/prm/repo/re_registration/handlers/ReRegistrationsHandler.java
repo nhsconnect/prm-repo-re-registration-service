@@ -10,6 +10,7 @@ import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
 @Component
 public class ReRegistrationsHandler {
 
+    private static final Class RETRYABLE_EXCEPTION_CLASS = IntermittentErrorPdsException.class;
 
     PdsAdaptorService pdsAdaptorService;
 
@@ -19,10 +20,16 @@ public class ReRegistrationsHandler {
 
     public void handle(ReRegistrationEvent reRegistrationEvent) {
         try {
-            pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
             log.info("RECEIVED: Re-registrations Event Message, payload length: " + reRegistrationEvent.toJsonString().length());
+            pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
         } catch (Exception e) {
-            throw new IntermittentErrorPdsException(e.getMessage(), e);
+            if (RETRYABLE_EXCEPTION_CLASS.isInstance(e)) {
+                log.info("Caught retryable exception in ReRegistrationsHandler", e);
+            }
+            else {
+                log.error("Uncaught exception in ReRegistrationsHandler", e);
+            }
+            throw e;
         }
     }
 }
