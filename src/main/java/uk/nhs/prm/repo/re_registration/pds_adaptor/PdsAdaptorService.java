@@ -85,6 +85,6 @@ public class PdsAdaptorService {
     }
 
     private String getPatientUrl(String nhsNumber) {
-        return pdsAdaptorServiceUrl + "/" + nhsNumber;
+        return pdsAdaptorServiceUrl + "/suspended-patient-status/" + nhsNumber;
     }
 }
