@@ -15,7 +15,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
 resource "aws_cloudwatch_metric_alarm" "health_metric_failure_alarm" {
   alarm_name                = "${var.environment}-${var.component_name}-health-metric-failure"
   comparison_operator       = "LessThanThreshold"
-  threshold                 = var.service_desired_count
+  threshold                 = "1"
   evaluation_periods        = "3"
   metric_name               = "Health"
   namespace                 = local.re_registration_service_metric_namespace
