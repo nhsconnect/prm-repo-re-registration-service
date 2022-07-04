@@ -109,6 +109,16 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_metrics_policy_attach" {
   policy_arn = aws_iam_policy.cloudwatch_metrics_policy.arn
 }
 
+resource "aws_iam_role_policy_attachment" "sns_policy" {
+  role       = aws_iam_role.component-ecs-role.name
+  policy_arn = aws_iam_policy.sns_policy.arn
+}
+
+resource "aws_iam_policy" "sns_policy" {
+  name   = "${var.environment}-${var.component_name}-sns"
+  policy = data.aws_iam_policy_document.sns_policy_doc.json
+}
+
 data "aws_iam_policy_document" "sns_policy_doc" {
   statement {
     actions = [

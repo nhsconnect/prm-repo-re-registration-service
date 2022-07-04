@@ -69,6 +69,18 @@ resource "aws_security_group" "ecs-tasks-sg" {
   }
 }
 
+resource "aws_ssm_parameter" "ecs_task_security_group" {
+  name  = "/repo/${var.environment}/output/${var.component_name}/ecs-sg-id"
+  type  = "String"
+  value = aws_security_group.ecs-tasks-sg.id
+
+  tags = {
+    Name        = "${var.environment}-${var.component_name}-ecs-task-security-group-id"
+    CreatedBy   = var.repo_name
+    Environment = var.environment
+  }
+}
+
 data "aws_vpc" "private_vpc" {
   id = data.aws_ssm_parameter.deductions_private_vpc_id.value
 }
