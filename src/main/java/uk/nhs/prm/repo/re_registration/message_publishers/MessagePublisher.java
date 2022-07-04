@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
+import uk.nhs.prm.repo.re_registration.config.Tracer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MessagePublisher {
     private final SnsClient snsClient;
-  //  private final Tracer tracer;
+    private final Tracer tracer;
 
     public void sendMessage(String topicArn, String message) {
         sendMessage(topicArn, message, null, null);
@@ -40,7 +41,7 @@ public class MessagePublisher {
 
     private Map<String, MessageAttributeValue> createMessageAttributes() {
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-       // messageAttributes.put("traceId", getMessageAttributeValue(tracer.getTraceId()));
+        messageAttributes.put("traceId", getMessageAttributeValue(tracer.getTraceId()));
         return messageAttributes;
     }
 
