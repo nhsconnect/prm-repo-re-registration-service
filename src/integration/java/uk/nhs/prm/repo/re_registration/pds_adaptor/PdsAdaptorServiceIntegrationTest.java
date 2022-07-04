@@ -77,20 +77,19 @@ public class PdsAdaptorServiceIntegrationTest {
 
     @Test
     void shouldRetryUpTo3TimesAndNotPutAnythingOnReRegistrationAuditTopicWhenPdsReturnsResponseWithStatusCode500() {
-        setPdsErrorStateWithStatusCode(NHS_NUMBER, 500);
+        setPdsRetryMessage(NHS_NUMBER);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
-        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()->{
-            verify(3, getRequestedFor(urlMatching("/suspended-patient-status/" + NHS_NUMBER)));
-            assertThat(isQueueEmpty(splunkAuditUploaderUrl));
-        });
+
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> assertThat(isQueueEmpty(splunkAuditUploaderUrl)).isTrue());
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> verify(3, getRequestedFor(urlMatching("/suspended-patient-status/" + NHS_NUMBER))));
     }
 
     @Test
     void shouldRetryWhenPdsReturnsResponseWithStatusCode500AndPublishOnReRegistrationAuditTopicOnce200IsReturned() {
-        setPdsRetryMessage(NHS_NUMBER);
+        setPdsRetryMessageAndSucceed(NHS_NUMBER);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
-                    verify(3, getRequestedFor(urlMatching("/suspended-patient-status/" + NHS_NUMBER)));
                     String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
                     assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PATIENT_IS_STILL_SUSPENDED);
                     assertThat(messageBody).contains(nemsMessageId);
@@ -99,74 +98,61 @@ public class PdsAdaptorServiceIntegrationTest {
 
     @Test
     void shouldPutTheAuditStatusMessageOnAuditTopicWhenPdsReturnsResponseWithStatusCode200() {
-        setPds200SuccessState(NHS_NUMBER);
-
+        setPds200SuccessState(null, 1, NHS_NUMBER);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
             String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
             assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PATIENT_IS_STILL_SUSPENDED);
             assertThat(messageBody).contains(nemsMessageId);
-        }
-        );
+        });
     }
 
     @Test
     void shouldPutTheAuditStatusMessageOnAuditTopicWhenPdsReturnsResponseWithStatusCode400() {
-        setPdsErrorStateWithStatusCode(NHS_NUMBER, 400);
-
+        setPdsErrorState(null, null, 1, NHS_NUMBER, 400);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
                     String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
                     assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PDS_RETURNS_4XX_ERROR);
                     assertThat(messageBody).contains(nemsMessageId);
-                }
-        );
+        });
     }
 
-    private void setPdsErrorStateWithStatusCode(String nhsNumber, int statusCode) {
-        stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
-                .willReturn(aResponse()
-                        .withStatus(statusCode)
-                        .withHeader("Content-Type", "text/xml")
-                        .withBody("<response>Some content</response>")));
-    }
-
-    private void setPds200SuccessState( String nhsNumber) {
-        stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber))
-                .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "text/xml")
-                        .withBody(getPdsResponseString().getBody())));
-    }
-
-    private void setPdsRetryMessage(String nhsNumber) {
-        setPds500ErrorState(STARTED, "Cause Success", 1, nhsNumber);
-        setPds500ErrorState("Cause Success", "Second Cause Success", 2, nhsNumber);
-
-        stubFor(get(urlEqualTo("/suspended-patient-status/" + nhsNumber)).atPriority(3)
-                .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
-                .inScenario("Retry Scenario")
-                .whenScenarioStateIs("Second Cause Success")
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(getPdsResponseString().getBody())));
-    }
-
-    private void setPds500ErrorState(String startingState, String finishedState, int priority, String nhsNumber) {
+    private void setPds200SuccessState(String startingState, int priority, String nhsNumber) {
         stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber)).atPriority(priority)
                 .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
                 .inScenario("Retry Scenario")
                 .whenScenarioStateIs(startingState)
                 .willReturn(aResponse()
-                        .withStatus(500)
+                        .withStatus(200)
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody(getPdsResponseString().getBody())));
+    }
+
+    private void setPdsErrorState(String startingState, String finishedState, int priority, String nhsNumber, int statusCode) {
+        stubFor(get(urlMatching("/suspended-patient-status/" + nhsNumber)).atPriority(priority)
+                .withHeader("Authorization", matching("Basic cmUtcmVnaXN0cmF0aW9uLXNlcnZpY2U6ZGVmYXVsdA=="))
+                .inScenario("Retry Scenario")
+                .whenScenarioStateIs(startingState)
+                .willReturn(aResponse()
+                        .withStatus(statusCode)
                         .withHeader("Content-Type", "text/xml")
                         .withBody("<response>Some content</response>"))
                 .willSetStateTo(finishedState));
+    }
+
+    private void setPdsRetryMessageAndSucceed(String nhsNumber) {
+        setPdsErrorState(STARTED, "Cause Success", 1, nhsNumber, 500);
+        setPdsErrorState("Cause Success", "Second Cause Success", 2, nhsNumber, 500);
+        setPds200SuccessState("Second Cause Success", 3, nhsNumber);
+    }
+
+    private void setPdsRetryMessage(String nhsNumber) {
+        setPdsErrorState(STARTED, "Cause Success", 1, nhsNumber, 500);
+        setPdsErrorState("Cause Success", "Second Cause Success", 2, nhsNumber, 500);
+        setPdsErrorState("Second Cause Success", null, 3, nhsNumber, 500);
     }
 
     private ReRegistrationEvent getReRegistrationEvent() {
