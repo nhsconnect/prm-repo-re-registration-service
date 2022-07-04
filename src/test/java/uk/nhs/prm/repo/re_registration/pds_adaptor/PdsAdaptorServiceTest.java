@@ -55,7 +55,7 @@ class PdsAdaptorServiceTest {
         when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
         verify(httpClient).get(url.capture(), username.capture(), password.capture());
-        assertThat("pds-service-url/1234567890").isEqualTo(url.getValue());
+        assertThat("pds-service-url/suspended-patient-status/1234567890").isEqualTo(url.getValue());
         assertThat("username").isEqualTo(username.getValue());
         assertThat("password").isEqualTo(password.getValue());
     }
