@@ -15,13 +15,14 @@ resource "aws_cloudwatch_log_group" "log_group" {
 resource "aws_cloudwatch_metric_alarm" "health_metric_failure_alarm" {
   alarm_name                = "${var.environment}-${var.component_name}-health-metric-failure"
   comparison_operator       = "LessThanThreshold"
-  threshold                 = "1"
+  threshold                 = var.service_desired_count
   evaluation_periods        = "3"
   metric_name               = "Health"
   namespace                 = local.re_registration_service_metric_namespace
   alarm_description         = "Alarm to flag failed health checks"
   statistic                 = "Maximum"
   treat_missing_data        = "breaching"
+  datapoints_to_alarm       = var.service_desired_count
   period                    = "60"
   dimensions = {
     "Environment" = var.environment
