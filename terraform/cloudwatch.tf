@@ -22,7 +22,6 @@ resource "aws_cloudwatch_metric_alarm" "health_metric_failure_alarm" {
   alarm_description         = "Alarm to flag failed health checks"
   statistic                 = "Maximum"
   treat_missing_data        = "breaching"
-  datapoints_to_alarm       = var.service_desired_count
   period                    = "60"
   dimensions = {
     "Environment" = var.environment
