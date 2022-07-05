@@ -41,10 +41,11 @@ public class PdsAdaptorService {
     public void getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent) {
         var url = getPatientUrl(reRegistrationEvent.getNhsNumber());
         try {
+            log.info("Making a GET suspended-patient-status to pds-adaptor");
             var pdsAdaptorResponseEntity = httpClient.get(url, authUserName, authPassword);
 
             if (isSuccessful(pdsAdaptorResponseEntity)) {
-                var parsedPdsAdaptorResponse = getParsedPdsAdaptorReponseBody(pdsAdaptorResponseEntity.getBody());
+                var parsedPdsAdaptorResponse = getParsedPdsAdaptorResponseBody(pdsAdaptorResponseEntity.getBody());
                 handleSuccessfulResponse(parsedPdsAdaptorResponse, reRegistrationEvent);
             }
         } catch (HttpStatusCodeException e) {
@@ -54,6 +55,7 @@ public class PdsAdaptorService {
 
     private void handleSuccessfulResponse(PdsAdaptorSuspensionStatusResponse pdsAdaptorResponse, ReRegistrationEvent reRegistrationEvent) {
         if (pdsAdaptorResponse.isSuspended()) {
+            log.info("Patient is suspended");
             reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
         } else {
             log.info("Patient is not suspended");
@@ -63,16 +65,19 @@ public class PdsAdaptorService {
     private void handleErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
 
         if (e.getStatusCode().is4xxClientError()) {
+            log.info("Encountered client error with status code : {}", e.getStatusCode());
             reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
                     "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
         } else if (e.getStatusCode().is5xxServerError()) {
+            log.info("Encountered server error with status code : {}", e.getStatusCode());
             throw new IntermittentErrorPdsException("Encountered error when calling pds get patient endpoint", e);
         }
 
     }
 
-    private PdsAdaptorSuspensionStatusResponse getParsedPdsAdaptorReponseBody(String responseBody) {
+    private PdsAdaptorSuspensionStatusResponse getParsedPdsAdaptorResponseBody(String responseBody) {
         try {
+            log.info("Trying to parse pds-adaptor response");
             return new ObjectMapper().readValue(responseBody, PdsAdaptorSuspensionStatusResponse.class);
         } catch (Exception e) {
             log.error("Encountered Exception while trying to parse pds-adaptor response");
