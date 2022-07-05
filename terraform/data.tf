@@ -31,3 +31,7 @@ data "aws_ssm_parameter" "pds_adaptor_auth_password" {
 data "aws_sqs_queue" "splunk_audit_uploader" {
   name = "${var.environment}-splunk-audit-uploader"
 }
+
+data "aws_ssm_parameter" "splunk_audit_uploader_kms_key" {
+  name = "/repo/${var.environment}/output/prm-deductions-infra/splunk-audit-uploader-kms-key"
+}
