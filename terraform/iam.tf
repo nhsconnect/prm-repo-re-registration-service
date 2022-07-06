@@ -145,7 +145,7 @@ data "aws_iam_policy_document" "re_registration_audit_policy_doc" {
     }
 
     resources = [
-      data.aws_sqs_queue.splunk_audit_uploader.arn
+      data.aws_ssm_parameter.splunk_audit_uploader.value
     ]
 
     condition {

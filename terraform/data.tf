@@ -28,8 +28,8 @@ data "aws_ssm_parameter" "pds_adaptor_auth_password" {
   name = "/repo/${var.environment}/user-input/api-keys/pds-adaptor/re-registration-service"
 }
 
-data "aws_sqs_queue" "splunk_audit_uploader" {
-  name = "${var.environment}-splunk-audit-uploader"
+data "aws_ssm_parameter" "splunk_audit_uploader" {
+  name = "/repo/${var.environment}/output/prm-deductions-infra/splunk-audit-uploader-queue-arn"
 }
 
 data "aws_ssm_parameter" "splunk_audit_uploader_kms_key" {
