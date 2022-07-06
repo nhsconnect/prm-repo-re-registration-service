@@ -130,6 +130,12 @@ data "aws_iam_policy_document" "sns_policy_doc" {
   }
 }
 
+resource "aws_sqs_queue_policy" "splunk_audit_uploader_access_policy" {
+  queue_url = data.aws_sqs_queue.splunk_audit_uploader.url
+  policy    = data.aws_iam_policy_document.re_registration_audit_policy_doc.json
+}
+
+
 data "aws_iam_policy_document" "re_registration_audit_policy_doc" {
   statement {
 
@@ -145,7 +151,7 @@ data "aws_iam_policy_document" "re_registration_audit_policy_doc" {
     }
 
     resources = [
-      data.aws_ssm_parameter.splunk_audit_uploader.value
+      data.aws_sqs_queue.splunk_audit_uploader.arn
     ]
 
     condition {

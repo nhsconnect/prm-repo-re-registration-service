@@ -24,3 +24,8 @@ resource "aws_sns_topic_subscription" "re_registrations_topic_sub" {
   topic_arn            = data.aws_ssm_parameter.re_registrations_sns_topic_arn.value
   endpoint             = aws_sqs_queue.re_registrations.arn
 }
+
+
+data "aws_sqs_queue" "splunk_audit_uploader" {
+  name = data.aws_ssm_parameter.splunk_audit_uploader_queue_name.value
+}
