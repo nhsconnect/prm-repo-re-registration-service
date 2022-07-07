@@ -11,7 +11,7 @@ locals {
     { name = "PDS_ADAPTOR_SERVICE_URL", value = data.aws_ssm_parameter.pds_adaptor_service_url.value },
     { name = "PDS_ADAPTOR_AUTH_PASSWORD", value = data.aws_ssm_parameter.pds_adaptor_auth_password.value },
     { name = "RE_REGISTRATIONS_AUDIT_SNS_TOPIC_ARN", value = aws_sns_topic.re_registration_audit_topic.arn },
-    { name = "CAN_SEND_DELETE_EHR_REQUEST", value = var.toggle_can_send_delete_ehr_request }
+    { name = "CAN_SEND_DELETE_EHR_REQUEST", value = tostring(var.toggle_can_send_delete_ehr_request) }
   ]
 }
 
