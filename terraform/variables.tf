@@ -31,3 +31,8 @@ variable "log_level" {
   type    = string
   default = "debug"
 }
+
+variable "toggle_can_send_delete_ehr_request" {
+  description = "Toggle to allow sending delete ehr request"
+  default = false
+}
