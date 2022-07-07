@@ -285,3 +285,34 @@ data "aws_iam_policy_document" "kms_policy_doc" {
     ]
   }
 }
+
+resource "aws_sqs_queue_policy" "splunk_audit_uploader" {
+  queue_url = data.aws_sqs_queue.splunk_audit_uploader.url
+  policy    = data.aws_iam_policy_document.splunk_audit_uploader_policy_doc.json
+}
+
+data "aws_iam_policy_document" "splunk_audit_uploader_policy_doc" {
+  statement {
+
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage"
+    ]
+
+    principals {
+      identifiers = ["sns.amazonaws.com"]
+      type        = "Service"
+    }
+
+    resources = [
+      data.aws_sqs_queue.splunk_audit_uploader.arn,
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      values   = [aws_sns_topic.re_registration_audit_topic.arn]
+      variable = "aws:SourceArn"
+    }
+  }
+}
