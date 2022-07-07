@@ -11,9 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsHandler;
+import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsRetryHandler;
 import uk.nhs.prm.repo.re_registration.listener.ReRegistrationsEventListener;
-import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -28,8 +27,7 @@ public class SqsListenerSpringConfiguration {
     private String reRegistrationsQueueName;
 
     private final Tracer tracer;
-    private final ReRegistrationsHandler reRegistrationsHandler;
-    private final ReRegistrationParser reRegistrationParser;
+    private final ReRegistrationsRetryHandler reRegistrationsRetryHandler;
 
     @Bean
     public AmazonSQSAsync amazonSQSAsync() {
@@ -48,7 +46,7 @@ public class SqsListenerSpringConfiguration {
         log.info("Re-registrations event queue name : {}", reRegistrationsQueueName);
         MessageConsumer consumer = session.createConsumer(session.createQueue(reRegistrationsQueueName));
 
-        consumer.setMessageListener(new ReRegistrationsEventListener(tracer, reRegistrationsHandler));
+        consumer.setMessageListener(new ReRegistrationsEventListener(tracer, reRegistrationsRetryHandler));
 
         connection.start();
 

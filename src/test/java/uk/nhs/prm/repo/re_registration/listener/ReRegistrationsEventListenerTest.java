@@ -7,7 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
-import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsHandler;
+import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsRetryHandler;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import javax.jms.JMSException;
@@ -24,7 +24,7 @@ class ReRegistrationsEventListenerTest {
     Tracer tracer;
 
     @Mock
-    ReRegistrationsHandler reRegistrationsHandler;
+    ReRegistrationsRetryHandler reRegistrationsRetryHandler;
 
     @InjectMocks
     private ReRegistrationsEventListener reRegistrationsEventListener;
@@ -48,7 +48,7 @@ class ReRegistrationsEventListenerTest {
         var reRegistrationMessage = "{\"nhsNumber\":\"" + NHS_NUMBER + "\",\"newlyRegisteredOdsCode\":\"" + NEWLY_REGISTERED_ODS_CODE + "\", \"nemsMessageId\":\"" + NEMS_MESSAGE_ID + "\",\"lastUpdated\":\"" + LAST_UPDATED + "\"}";
         SQSTextMessage message = spy(new SQSTextMessage(reRegistrationMessage));
         reRegistrationsEventListener.onMessage(message);
-        verify(reRegistrationsHandler).handle(reRegistrationMessage);
+        verify(reRegistrationsRetryHandler).handle(reRegistrationMessage);
         verify(message).acknowledge();
     }
 
@@ -58,7 +58,7 @@ class ReRegistrationsEventListenerTest {
         var exception = new IllegalStateException("some exception");
         var message = spy(new SQSTextMessage("not-a-re-registrations-message"));
 
-        doThrow(exception).when(reRegistrationsHandler).handle(any());
+        doThrow(exception).when(reRegistrationsRetryHandler).handle(any());
 
         reRegistrationsEventListener.onMessage(message);
 
@@ -66,7 +66,4 @@ class ReRegistrationsEventListenerTest {
         verify(message, never()).acknowledge();
     }
 
-    private String getMessageAsJsonString(){
-        return new ReRegistrationEvent("1234567890", "ABC123", UUID.randomUUID().toString(), "2017-11-01T15:00:33+00:00").toJsonString();
-    }
 }
