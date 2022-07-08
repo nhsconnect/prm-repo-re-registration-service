@@ -56,10 +56,3 @@ resource "aws_sqs_queue" "re_registration_audit_uploader_dlq" {
     Environment = var.environment
   }
 }
-
-resource "aws_sns_topic_subscription" "re_registration_audit" {
-  protocol             = "sqs"
-  raw_message_delivery = true
-  topic_arn            = aws_sns_topic.re_registration_audit_topic.arn
-  endpoint             = aws_sqs_queue.re_registration_audit_uploader.arn
-}
