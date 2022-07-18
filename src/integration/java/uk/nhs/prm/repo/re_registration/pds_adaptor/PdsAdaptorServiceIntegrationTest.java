@@ -47,11 +47,12 @@ public class PdsAdaptorServiceIntegrationTest {
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
 
-    private String splunkAuditUploader = "splunk-audit-uploader";
+    @Value("${aws.reRegistrationsAuditQueueName}")
+    private String reRegistrationsAuditQueueName;
 
     WireMockServer stubPdsAdaptor;
     private String reRegistrationsQueueUrl;
-    private String splunkAuditUploaderUrl;
+    private String reRegistrationsAuditUrl;
     private String nemsMessageId = "nemsMessageId";
 
 
@@ -59,14 +60,14 @@ public class PdsAdaptorServiceIntegrationTest {
     public void setUp() {
         stubPdsAdaptor = initializeWebServer();
         reRegistrationsQueueUrl = sqs.getQueueUrl(reRegistrationsQueueName).getQueueUrl();
-        splunkAuditUploaderUrl = sqs.getQueueUrl(splunkAuditUploader).getQueueUrl();
+        reRegistrationsAuditUrl = sqs.getQueueUrl(reRegistrationsAuditQueueName).getQueueUrl();
     }
 
     @AfterEach
     public void tearDown() {
         stubPdsAdaptor.resetAll();
         stubPdsAdaptor.stop();
-        sqs.purgeQueue(new PurgeQueueRequest(splunkAuditUploaderUrl));
+        sqs.purgeQueue(new PurgeQueueRequest(reRegistrationsAuditUrl));
     }
 
     private WireMockServer initializeWebServer() {
@@ -80,7 +81,7 @@ public class PdsAdaptorServiceIntegrationTest {
         setPdsRetryMessage(NHS_NUMBER);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
-        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> assertThat(isQueueEmpty(splunkAuditUploaderUrl)).isTrue());
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> assertThat(isQueueEmpty(reRegistrationsAuditUrl)).isTrue());
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> verify(3, getRequestedFor(urlMatching("/suspended-patient-status/" + NHS_NUMBER))));
     }
 
@@ -90,7 +91,7 @@ public class PdsAdaptorServiceIntegrationTest {
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
-                    String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
+                    String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
                     assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PATIENT_IS_STILL_SUSPENDED);
                     assertThat(messageBody).contains(nemsMessageId);
         });
@@ -102,7 +103,7 @@ public class PdsAdaptorServiceIntegrationTest {
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
-            String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
+            String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
             assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PATIENT_IS_STILL_SUSPENDED);
             assertThat(messageBody).contains(nemsMessageId);
         });
@@ -114,7 +115,7 @@ public class PdsAdaptorServiceIntegrationTest {
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
-                    String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
+                    String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
                     assertThat(messageBody).contains(STATUS_MESSAGE_FOR_WHEN_PDS_RETURNS_4XX_ERROR);
                     assertThat(messageBody).contains(nemsMessageId);
         });

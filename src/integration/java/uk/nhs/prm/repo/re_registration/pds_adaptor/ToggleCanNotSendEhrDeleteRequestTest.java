@@ -40,22 +40,23 @@ public class ToggleCanNotSendEhrDeleteRequestTest {
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
 
-    private String splunkAuditUploader = "splunk-audit-uploader";
+    @Value("${aws.reRegistrationsAuditQueueName}")
+    private String reRegistrationsAuditQueueName;
 
     private String reRegistrationsQueueUrl;
-    private String splunkAuditUploaderUrl;
+    private String reRegistrationsAuditUrl;
     private String nemsMessageId = "nemsMessageId";
 
 
     @BeforeEach
     public void setUp() {
         reRegistrationsQueueUrl = sqs.getQueueUrl(reRegistrationsQueueName).getQueueUrl();
-        splunkAuditUploaderUrl = sqs.getQueueUrl(splunkAuditUploader).getQueueUrl();
+        reRegistrationsAuditUrl = sqs.getQueueUrl(reRegistrationsAuditQueueName).getQueueUrl();
     }
 
     @AfterEach
     public void tearDown() {
-        sqs.purgeQueue(new PurgeQueueRequest(splunkAuditUploaderUrl));
+        sqs.purgeQueue(new PurgeQueueRequest(reRegistrationsAuditUrl));
     }
 
     @Test
@@ -63,7 +64,7 @@ public class ToggleCanNotSendEhrDeleteRequestTest {
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
-            String messageBody = checkMessageInRelatedQueue(splunkAuditUploaderUrl).get(0).getBody();
+            String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
             assertThat(messageBody).contains(STATUS_FOR_RECEIVED_REGISTRATION_EVENT);
             assertThat(messageBody).contains(nemsMessageId);
         });

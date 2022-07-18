@@ -39,7 +39,8 @@ public class LocalStackAwsConfig {
     @Autowired
     private SnsClient snsClient;
 
-    private String splunkAuditUploader = "splunk-audit-uploader";
+    @Value("${aws.reRegistrationsAuditQueueName}")
+    private String reRegistrationsAuditQueueName;
 
     @Value("${aws.region}")
     private String awsRegion;
@@ -85,10 +86,10 @@ public class LocalStackAwsConfig {
     @PostConstruct
     public void setupTestQueuesAndTopics() {
         recreateReRegistrationsQueue();
-        var splunkAuditUploaderQueue = amazonSQSAsync.createQueue(splunkAuditUploader);
+        var reRegistrationsAuditQueue = amazonSQSAsync.createQueue(reRegistrationsAuditQueueName);
         var topic = snsClient.createTopic(CreateTopicRequest.builder().name("re_registration_audit_sns_topic").build());
 
-        createSnsTestReceiverSubscription(topic, getQueueArn(splunkAuditUploaderQueue.getQueueUrl()));
+        createSnsTestReceiverSubscription(topic, getQueueArn(reRegistrationsAuditQueue.getQueueUrl()));
     }
 
     private void recreateReRegistrationsQueue() {

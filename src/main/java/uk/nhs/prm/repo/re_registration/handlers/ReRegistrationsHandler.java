@@ -31,7 +31,7 @@ public class ReRegistrationsHandler {
     }
 
     private void deleteEhr(ReRegistrationEvent reRegistrationEvent) {
-        log.info("Toggle canSendEhrRequest is true: processing event to delete ehr");
+        log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
         pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
     }
 

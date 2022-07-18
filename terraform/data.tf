@@ -28,10 +28,6 @@ data "aws_ssm_parameter" "pds_adaptor_auth_password" {
   name = "/repo/${var.environment}/user-input/api-keys/pds-adaptor/re-registration-service"
 }
 
-data "aws_ssm_parameter" "splunk_audit_uploader_queue_name" {
-  name = "/repo/${var.environment}/output/prm-deductions-infra/splunk-audit-uploader-queue-name"
-}
-
-data "aws_ssm_parameter" "splunk_audit_uploader_kms_key" {
-  name = "/repo/${var.environment}/output/prm-deductions-infra/splunk-audit-uploader-kms-key"
+data "aws_ssm_parameter" "re_registration_service_authorization_keys_for_ehr_repo" {
+  name = "/repo/${var.environment}/user-input/api-keys/ehr-repo/re-registration-service"
 }
