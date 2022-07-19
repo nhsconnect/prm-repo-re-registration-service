@@ -11,8 +11,6 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
-import uk.nhs.prm.repo.re_registration.metrics.AppConfig;
-import uk.nhs.prm.repo.re_registration.metrics.MetricPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;

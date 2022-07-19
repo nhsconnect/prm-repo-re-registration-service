@@ -8,10 +8,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
 import uk.nhs.prm.repo.re_registration.handlers.ReRegistrationsRetryHandler;
-import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import javax.jms.JMSException;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;

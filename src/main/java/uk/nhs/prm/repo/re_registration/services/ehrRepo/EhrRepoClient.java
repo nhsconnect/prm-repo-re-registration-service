@@ -19,8 +19,6 @@ public class EhrRepoClient {
     private final URL ehrRepoUrl;
     private final String ehrRepoAuthKey;
     private final Tracer tracer;
-    uk.nhs.prm.repo.re_registration.http.HttpClient httpClient;
-
 
     public EhrRepoClient(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer) throws MalformedURLException {
         this.ehrRepoUrl = new URL(ehrRepoUrl);

@@ -10,8 +10,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
-import static uk.nhs.prm.repo.re_registration.config.Tracer.NEMS_MESSAGE_ID;
-import static uk.nhs.prm.repo.re_registration.config.Tracer.TRACE_ID;
 import static uk.nhs.prm.repo.re_registration.config.Tracer.*;
 
 class TracerTest {
