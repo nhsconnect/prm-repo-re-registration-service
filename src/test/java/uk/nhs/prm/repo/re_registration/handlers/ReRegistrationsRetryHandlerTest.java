@@ -1,7 +1,6 @@
 package uk.nhs.prm.repo.re_registration.handlers;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -18,7 +17,6 @@ import static org.mockito.Mockito.*;
 import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
 
 @ExtendWith(MockitoExtension.class)
-@Disabled
 class ReRegistrationsRetryHandlerTest {
 
     @Mock

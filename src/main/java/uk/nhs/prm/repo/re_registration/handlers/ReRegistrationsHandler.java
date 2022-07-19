@@ -23,7 +23,7 @@ public class ReRegistrationsHandler {
     private final ReRegistrationAuditPublisher auditPublisher;
     private final EhrRepoClient ehrRepoClient;
 
-    public void process(String payload) throws Exception {
+    public void process(String payload) {
 
         log.info("RECEIVED: Re-registrations Event Message, payload length: " + payload.length());
         var reRegistrationEvent = parser.parse(payload);
@@ -32,7 +32,11 @@ public class ReRegistrationsHandler {
 
                 var parsedPdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
                 var isSuspended = checkSuspendedStatus(parsedPdsAdaptorResponse);
+            try {
                 handlePdsResponse(reRegistrationEvent, isSuspended);
+            } catch (Exception e) {
+                log.error("Error while handling pds response", e);
+            }
         } else {
             log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
             sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
