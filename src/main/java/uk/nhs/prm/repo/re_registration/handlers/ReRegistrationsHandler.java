@@ -10,6 +10,7 @@ import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
+import uk.nhs.prm.repo.re_registration.services.ehrRepo.EhrRepoClient;
 
 @Slf4j
 @Component
@@ -20,27 +21,25 @@ public class ReRegistrationsHandler {
     private final PdsAdaptorService pdsAdaptorService;
     private final ToggleConfig toggleConfig;
     private final ReRegistrationAuditPublisher auditPublisher;
+    private final EhrRepoClient ehrRepoClient;
 
-    public void process(String payload) {
+    public void process(String payload) throws Exception {
 
         log.info("RECEIVED: Re-registrations Event Message, payload length: " + payload.length());
         var reRegistrationEvent = parser.parse(payload);
 
         if (toggleConfig.canSendDeleteEhrRequest()) {
-            try {
+
                 var parsedPdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
                 var isSuspended = checkSuspendedStatus(parsedPdsAdaptorResponse);
                 handlePdsResponse(reRegistrationEvent, isSuspended);
-            }catch (Exception e){
-                throw e;
-            }
         } else {
             log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
             sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
         }
     }
 
-    private void handlePdsResponse(ReRegistrationEvent reRegistrationEvent, boolean isSuspended) {
+    private void handlePdsResponse(ReRegistrationEvent reRegistrationEvent, boolean isSuspended) throws Exception {
         if (isSuspended) {
             log.info("Patient is suspended");
             sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED");
@@ -54,8 +53,11 @@ public class ReRegistrationsHandler {
         return pdsAdaptorResponse.isSuspended();
     }
 
-    private void deleteEhr(ReRegistrationEvent reRegistrationEvent) {
+    private void deleteEhr(ReRegistrationEvent reRegistrationEvent) throws Exception {
         log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
+        var ehrDeleteResponse = ehrRepoClient.deletePatientEhr(reRegistrationEvent.getNhsNumber());
+        sendAuditMessage(reRegistrationEvent, "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: " + ehrDeleteResponse.getConversationIds());
+
     }
 
     private void sendAuditMessage(ReRegistrationEvent reRegistrationEvent, String status) {

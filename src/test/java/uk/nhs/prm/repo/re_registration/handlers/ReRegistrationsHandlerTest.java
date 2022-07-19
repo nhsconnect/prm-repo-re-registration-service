@@ -13,6 +13,10 @@ import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
+import uk.nhs.prm.repo.re_registration.services.ehrRepo.EhrDeleteResponse;
+import uk.nhs.prm.repo.re_registration.services.ehrRepo.EhrRepoClient;
+
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +38,9 @@ class ReRegistrationsHandlerTest {
     @Mock
     private ReRegistrationAuditPublisher auditPublisher;
 
+    @Mock
+    EhrRepoClient ehrRepoClient;
+
     @InjectMocks
     private ReRegistrationsHandler reRegistrationsHandler;
 
@@ -45,7 +52,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    public void shouldLogTheLengthOfMessageReceived() {
+    public void shouldLogTheLengthOfMessageReceived() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
         var testLogAppender = addTestLogAppender();
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -54,7 +61,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() {
+    void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -62,7 +69,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldNotCallPdsAndSendMessageToAuditTopicWithCanSendDeleteEhrRequestIsFalse() {
+    void shouldNotCallPdsAndSendMessageToAuditTopicWithCanSendDeleteEhrRequestIsFalse() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verifyNoInteractions(pdsAdaptorService);
@@ -71,7 +78,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldPublishToQueueWhenPatientIsSuspended() {
+    void shouldPublishToQueueWhenPatientIsSuspendedWithNoAction() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -79,11 +86,13 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldNotPublishToQueueWhenPatientIsNotSuspended() {
+    void shouldPublishToQueueWhenPatientIsNotSuspendedWithAction() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
+        when(ehrRepoClient.deletePatientEhr(getParsedMessage().getNhsNumber())).thenReturn(getEhrDeleteResponse());
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
-        verify(auditPublisher, times(0)).sendMessage(any());
+        verify(auditPublisher, times(1)).sendMessage(any());
+        verify(auditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: [2431d4ff-f760-4ab9-8cd8-a3fc47846762, c184cc19-86e9-4a95-b5b5-2f156900bb3c]"));
     }
 
     private ReRegistrationEvent getParsedMessage() {
@@ -92,5 +101,9 @@ class ReRegistrationsHandlerTest {
 
     private PdsAdaptorSuspensionStatusResponse getPdsResponseStringWithSuspendedStatus(boolean isSuspended) {
         return new PdsAdaptorSuspensionStatusResponse("0000000000",isSuspended ,"currentOdsCode","managingOrganisation","etag",false);
+    }
+
+    private EhrDeleteResponse getEhrDeleteResponse() {
+        return new EhrDeleteResponse("patients", "1234567890", Arrays.asList("2431d4ff-f760-4ab9-8cd8-a3fc47846762", "c184cc19-86e9-4a95-b5b5-2f156900bb3c"));
     }
 }

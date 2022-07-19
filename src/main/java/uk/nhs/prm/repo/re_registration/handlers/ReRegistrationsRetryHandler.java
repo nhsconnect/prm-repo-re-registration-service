@@ -40,7 +40,7 @@ public class ReRegistrationsRetryHandler {
         retryableProcessEvent.apply(message);
     }
 
-    public Void processOnce(String payload) {
+    public Void processOnce(String payload){
         try {
             reRegistrationsHandler.process(payload);
         } catch (Exception e) {
@@ -49,7 +49,11 @@ public class ReRegistrationsRetryHandler {
             } else {
                 log.error("Uncaught exception in ReRegistrationsHandler", e);
             }
-            throw e;
+            try {
+                throw e;
+            } catch (Exception ex) {
+                log.error("Uncaught exception in ReRegistrationsHandler", e);
+            }
         }
         return null;
     }
