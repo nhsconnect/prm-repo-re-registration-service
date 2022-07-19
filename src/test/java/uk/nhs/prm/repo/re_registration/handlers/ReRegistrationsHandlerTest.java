@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.re_registration.handlers;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,8 +12,7 @@ import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
-
-import java.util.UUID;
+import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,22 +37,26 @@ class ReRegistrationsHandlerTest {
     @InjectMocks
     private ReRegistrationsHandler reRegistrationsHandler;
 
+    private ReRegistrationEvent reRegistrationEvent = getParsedMessage();
+
+    @BeforeEach
+    void setUp(){
+        when(parser.parse(any())).thenReturn(reRegistrationEvent);
+    }
+
     @Test
     public void shouldLogTheLengthOfMessageReceived() {
-        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
         var testLogAppender = addTestLogAppender();
-
-        reRegistrationsHandler.process(getParsedMessage().toJsonString());
-
+        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         var loggedEvent = testLogAppender.findLoggedEvent("RECEIVED");
-        assertThat(loggedEvent.getMessage()).endsWith("length: 157");
+        assertThat(loggedEvent.getMessage()).endsWith("length: 134");
     }
 
     @Test
     void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
-        var reRegistrationEvent = getParsedMessage();
-        when(parser.parse(any())).thenReturn(reRegistrationEvent);
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verify(pdsAdaptorService, times(1)).getPatientPdsStatus(reRegistrationEvent);
     }
@@ -60,15 +64,33 @@ class ReRegistrationsHandlerTest {
     @Test
     void shouldNotCallPdsAndSendMessageToAuditTopicWithCanSendDeleteEhrRequestIsFalse() {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
-        var reRegistrationEvent = getParsedMessage();
-        when(parser.parse(any())).thenReturn(reRegistrationEvent);
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verifyNoInteractions(pdsAdaptorService);
         var auditMessage = new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
         verify(auditPublisher).sendMessage(auditMessage);
     }
 
+    @Test
+    void shouldPublishToQueueWhenPatientIsSuspended() {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
+        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
+        verify(auditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
+    }
+
+    @Test
+    void shouldNotPublishToQueueWhenPatientIsNotSuspended() {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
+        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
+        verify(auditPublisher, times(0)).sendMessage(any());
+    }
+
     private ReRegistrationEvent getParsedMessage() {
-        return new ReRegistrationEvent("1234567890", "ABC123", UUID.randomUUID().toString(), "2017-11-01T15:00:33+00:00");
+        return new ReRegistrationEvent("1234567890", "ABC123", "nemsMessageId", "2017-11-01T15:00:33+00:00");
+    }
+
+    private PdsAdaptorSuspensionStatusResponse getPdsResponseStringWithSuspendedStatus(boolean isSuspended) {
+        return new PdsAdaptorSuspensionStatusResponse("0000000000",isSuspended ,"currentOdsCode","managingOrganisation","etag",false);
     }
 }

@@ -38,28 +38,19 @@ public class PdsAdaptorService {
         this.authPassword = authPassword;
     }
 
-    public void getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent) {
+    public PdsAdaptorSuspensionStatusResponse getPatientPdsStatus(ReRegistrationEvent reRegistrationEvent) {
         var url = getPatientUrl(reRegistrationEvent.getNhsNumber());
         try {
             log.info("Making a GET suspended-patient-status to pds-adaptor");
             var pdsAdaptorResponseEntity = httpClient.get(url, authUserName, authPassword);
 
             if (isSuccessful(pdsAdaptorResponseEntity)) {
-                var parsedPdsAdaptorResponse = getParsedPdsAdaptorResponseBody(pdsAdaptorResponseEntity.getBody());
-                handleSuccessfulResponse(parsedPdsAdaptorResponse, reRegistrationEvent);
+                return getParsedPdsAdaptorResponseBody(pdsAdaptorResponseEntity.getBody());
             }
         } catch (HttpStatusCodeException e) {
             handleErrorResponse(reRegistrationEvent, e);
         }
-    }
-
-    private void handleSuccessfulResponse(PdsAdaptorSuspensionStatusResponse pdsAdaptorResponse, ReRegistrationEvent reRegistrationEvent) {
-        if (pdsAdaptorResponse.isSuspended()) {
-            log.info("Patient is suspended");
-            reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
-        } else {
-            log.info("Patient is not suspended");
-        }
+        return null;
     }
 
     private void handleErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {

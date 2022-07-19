@@ -9,6 +9,7 @@ import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
+import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
 
 @Slf4j
 @Component
@@ -21,22 +22,43 @@ public class ReRegistrationsHandler {
     private final ReRegistrationAuditPublisher auditPublisher;
 
     public void process(String payload) {
+
         log.info("RECEIVED: Re-registrations Event Message, payload length: " + payload.length());
         var reRegistrationEvent = parser.parse(payload);
+
         if (toggleConfig.canSendDeleteEhrRequest()) {
-            deleteEhr(reRegistrationEvent);
+            try {
+                var parsedPdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
+                var isSuspended = checkSuspendedStatus(parsedPdsAdaptorResponse);
+                handlePdsResponse(reRegistrationEvent, isSuspended);
+            }catch (Exception e){
+                throw e;
+            }
         } else {
-            sendAuditMessage(reRegistrationEvent);
+            log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
+            sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
         }
+    }
+
+    private void handlePdsResponse(ReRegistrationEvent reRegistrationEvent, boolean isSuspended) {
+        if (isSuspended) {
+            log.info("Patient is suspended");
+            sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED");
+        }else{
+            log.info("Patient is not suspended");
+            deleteEhr(reRegistrationEvent);
+        }
+    }
+
+    private boolean checkSuspendedStatus(PdsAdaptorSuspensionStatusResponse pdsAdaptorResponse) {
+        return pdsAdaptorResponse.isSuspended();
     }
 
     private void deleteEhr(ReRegistrationEvent reRegistrationEvent) {
         log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
-        pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
     }
 
-    private void sendAuditMessage(ReRegistrationEvent reRegistrationEvent) {
-        log.info("Toggle canSendEhrRequest is false: not processing event, sending update to audit");
-        auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED"));
+    private void sendAuditMessage(ReRegistrationEvent reRegistrationEvent, String status) {
+        auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), status));
     }
 }

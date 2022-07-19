@@ -15,12 +15,14 @@ import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
+import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PdsAdaptorServiceTest {
@@ -61,17 +63,11 @@ class PdsAdaptorServiceTest {
     }
 
     @Test
-    void shouldPublishToQueueWhenPatientIsSuspended() {
+    void shouldReturnParsedPdsAdaptorResponseIfSuccessful(){
         when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
-        pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
-        verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
-    }
-
-    @Test
-    void shouldNotPublishToQueueWhenPatientIsNotSuspended() {
-        when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
-        pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
-        verify(reRegistrationAuditPublisher, times(0)).sendMessage(any());
+        var actualResponse = pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
+        var expectedResponse = new PdsAdaptorSuspensionStatusResponse("0000000000",true ,"currentOdsCode","managingOrganisation","etag",false);
+        assertEquals(expectedResponse, actualResponse);
     }
 
     @Test
@@ -85,16 +81,6 @@ class PdsAdaptorServiceTest {
     void shouldThrowAnIntermittentErrorPdsExceptionWhenPDSAdaptorReturns5xxError() {
         when(httpClient.get(any(), any(), any())).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
         assertThrows(IntermittentErrorPdsException.class, () -> pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent()));
-    }
-
-    @Test
-    public void shouldLogForNotSuspendedPatient() {
-        var testLogAppender = addTestLogAppender();
-        when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
-        pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
-
-        var loggedEvent = testLogAppender.findLoggedEvent("Patient is not suspended");
-        assertThat(loggedEvent).isNotNull();
     }
 
     private ResponseEntity<String> getPdsResponseStringWithSuspendedStatus(boolean isSuspended) {
