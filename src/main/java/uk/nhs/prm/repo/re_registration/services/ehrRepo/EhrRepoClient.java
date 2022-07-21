@@ -1,54 +1,86 @@
 package uk.nhs.prm.repo.re_registration.services.ehrRepo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
+import uk.nhs.prm.repo.re_registration.http.HttpClient;
+import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
+import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
+import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 
+@Slf4j
 @Service
 public class EhrRepoClient {
-    private final URL ehrRepoUrl;
+    private final String ehrRepoUrl;
     private final String ehrRepoAuthKey;
     private final Tracer tracer;
+    private final ReRegistrationAuditPublisher auditPublisher;
+    private HttpClient httpClient;
 
-    public EhrRepoClient(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer) throws MalformedURLException {
-        this.ehrRepoUrl = new URL(ehrRepoUrl);
+    public EhrRepoClient(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer, ReRegistrationAuditPublisher auditPublisher, HttpClient httpClient) throws MalformedURLException {
+        this.ehrRepoUrl = ehrRepoUrl;
         this.ehrRepoAuthKey = ehrRepoAuthKey;
         this.tracer = tracer;
+        this.auditPublisher = auditPublisher;
+        this.httpClient = httpClient;
     }
 
-    public EhrDeleteResponse deletePatientEhr(String nhsNumber) throws IOException, URISyntaxException, InterruptedException, HttpException {
-        String endpoint = "/patients/" + nhsNumber;
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(new URL(ehrRepoUrl, endpoint).toURI())
-                .header("Authorization", ehrRepoAuthKey)
-                .header("Content-Type", "application/json")
-                .header("traceId", tracer.getTraceId())
-                .DELETE().build();
+    public EhrDeleteResponse deletePatientEhr(ReRegistrationEvent reRegistrationEvent) {
 
-        System.out.println("*** Sending httpRequest to EhrRepo as : " + httpRequest);
+        var url = getPatientDeleteEhrUrl(reRegistrationEvent.getNhsNumber());
+        try {
+            log.info("Making a DELETE EHR Request to ehr-repo");
+            var ehrRepoResponse = httpClient.delete(url, ehrRepoAuthKey);
 
-        var response = HttpClient.newBuilder()
-                .build()
-                .send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            if (isDeleteRequestSuccessful(ehrRepoResponse)) {
+                return getParsedDeleteEhrResponseBody(ehrRepoResponse.getBody());
+            }
+        } catch (HttpStatusCodeException e) {
+            handleErrorResponse(reRegistrationEvent, e);
+        }
+        return null;
+    }
 
-        System.out.println("ehrDeleteResponse coming from ehrRepo is : " + response.body());
+    private void handleErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
 
-        if (response.statusCode() != 200) {
-            throw new HttpException(String.format("Unexpected response from EHR while checking if a message was stored: %d", response.statusCode()));
+        if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
+            log.info("Encountered client error with status code : {}", e.getStatusCode());
+            auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
+                    "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
+        }else if(e.getStatusCode().equals(HttpStatus.BAD_REQUEST)){
+            log.info("Encountered client error with status code : {}", e.getStatusCode());
+            auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
+                    "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
+        }
+        else if (e.getStatusCode().is5xxServerError()) {
+            log.info("Encountered server error with status code : {}", e.getStatusCode());
+            throw new IntermittentErrorEhrRepoException("Encountered error when calling ehr-repo DELETE patient endpoint", e);
         }
 
-        return new ObjectMapper().readValue(response.body(), EhrDeleteResponse.class);
-
     }
 
+    private EhrDeleteResponse getParsedDeleteEhrResponseBody(String responseBody) {
+        try {
+            log.info("Trying to parse ehr-repo response");
+            return new ObjectMapper().readValue(responseBody, EhrDeleteResponse.class);
+        } catch (Exception e) {
+            log.error("Encountered Exception while trying to request patient DELETE ehr");
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isDeleteRequestSuccessful(ResponseEntity<String> response) {
+        return response.getStatusCode().is2xxSuccessful();
+    }
+
+    private String getPatientDeleteEhrUrl(String nhsNumber) {
+        return ehrRepoUrl + "/patients/" + nhsNumber;
+    }
 }

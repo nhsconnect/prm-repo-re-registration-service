@@ -22,6 +22,18 @@ public class HttpClient {
         return restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(getHeaders(userName, password)), String.class);
     }
 
+    public ResponseEntity<String> delete(String uri, String authKey) {
+        return restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(getHeadersForEhrRepo(authKey)), String.class);
+    }
+
+    private HttpHeaders getHeadersForEhrRepo(String authKey) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setBasicAuth(authKey);
+        headers.add("traceId", tracer.getTraceId());
+        return headers;
+    }
+
     private HttpHeaders getHeaders(String userName, String password) {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));

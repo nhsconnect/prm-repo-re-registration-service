@@ -1,53 +1,110 @@
 package uk.nhs.prm.repo.re_registration.services.ehrRepo;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import org.apache.http.HttpException;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
+import uk.nhs.prm.repo.re_registration.http.HttpClient;
+import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
+import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
+import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.UUID;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@Tag("unit")
-public class EhrRepoClientTest {
-    @RegisterExtension
-    WireMockExtension wireMock = new WireMockExtension();
-    static UUID traceId = UUID.randomUUID();
+@ExtendWith(MockitoExtension.class)
+class EhrRepoClientTest {
+    @Mock
+    ReRegistrationAuditPublisher reRegistrationAuditPublisher;
 
     Tracer tracer = mock(Tracer.class);
 
+    static UUID traceId = UUID.randomUUID();
+
+    @Mock
+    HttpClient httpClient;
+
     EhrRepoClient ehrRepoClient;
 
+
+    @Captor
+    ArgumentCaptor<String> url;
+
+    @Captor
+    ArgumentCaptor<String> authKey;
+
+
+    private String ehrRepoServiceUrl = "ehr-repo-service-url";
+    private String ehrRepoAuthKey = "authKey";
+
     @BeforeEach
-     void setUp() throws MalformedURLException {
-        when(tracer.getTraceId()).thenReturn(String.valueOf(traceId));
-        ehrRepoClient = new EhrRepoClient(wireMock.baseUrl(), "secret", tracer);
+    void init() throws MalformedURLException {
+        ehrRepoClient = new EhrRepoClient(ehrRepoServiceUrl, ehrRepoAuthKey, tracer, reRegistrationAuditPublisher, httpClient);
     }
 
     @Test
-    public void shouldCallDeleteEhrEndpointInEhrRepoService() throws IOException, URISyntaxException, InterruptedException, HttpException {
-        String nhsNumber = "1234567890";
+    void shouldCallHttpClientWithCorrectUriAndUserNAmeAndPassword() {
+        when(httpClient.delete(any(), any())).thenReturn(createDeleteEhrResponseJsonString());
+        ehrRepoClient.deletePatientEhr(getReRegistrationEvent());
+        verify(httpClient).delete(url.capture(), authKey.capture());
+        assertThat("ehr-repo-service-url/patients/1234567890").isEqualTo(url.getValue());
+        assertThat("authKey").isEqualTo(authKey.getValue());
+    }
 
-        wireMock.stubFor(delete(urlEqualTo("/patients/" + nhsNumber)).withHeader("Authorization", equalTo("secret"))
-                .withHeader("traceId", equalTo(String.valueOf(traceId)))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withBody("{\"type\":\"patients\", \"id\":\"1234567890\", \"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\"," + "\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]}")
-                        .withHeader("Content-Type", "application/json")));
+    @Test
+    void shouldReturnParsedEhrRepoResponseIfSuccessfulAndWhenEhrResponseReturns200Ok(){
+        when(httpClient.delete(any(), any())).thenReturn(createDeleteEhrResponseJsonString());
+        var actualResponse = ehrRepoClient.deletePatientEhr(getReRegistrationEvent());
+        var expectedResponse = createExpectedSuccessfulEhrDeleteResponse();
+        assertEquals(expectedResponse, actualResponse);
+    }
 
-        var actualEhrDeleteResponse = ehrRepoClient.deletePatientEhr(nhsNumber);
-        var expectedEhrDeleteResponse = new EhrDeleteResponse("patients", nhsNumber, Arrays.asList("2431d4ff-f760-4ab9-8cd8-a3fc47846762", "c184cc19-86e9-4a95-b5b5-2f156900bb3c"));
-        assertEquals(expectedEhrDeleteResponse, actualEhrDeleteResponse);
+    @Test
+    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns404Error() {
+        when(httpClient.delete(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
+        ehrRepoClient.deletePatientEhr(getReRegistrationEvent());
+        verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(),"NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
+    }
+
+    @Test
+    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns400Error() {
+        when(httpClient.delete(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+        ehrRepoClient.deletePatientEhr(getReRegistrationEvent());
+        verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(),"NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
+    }
+
+    @Test
+    void shouldThrowAnIntermittentErrorExceptionWhenEhrResponseReturns5xxError() {
+        when(httpClient.delete(any(), any())).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+        assertThrows(IntermittentErrorEhrRepoException.class, () -> ehrRepoClient.deletePatientEhr(getReRegistrationEvent()));
+    }
+
+    private ReRegistrationEvent getReRegistrationEvent() {
+        return new ReRegistrationEvent("1234567890", "ABC123", "nemsMessageId", "2017-11-01T15:00:33+00:00");
+    }
+
+
+    private ResponseEntity<String> createDeleteEhrResponseJsonString(){
+        var ehrRepoDeleteResponse = "{\"type\":\"patients\", \"id\":\"1234567890\", \"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\"," + "\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]}";
+        return new ResponseEntity<>(ehrRepoDeleteResponse, HttpStatus.OK);
+    }
+
+    private EhrDeleteResponse createExpectedSuccessfulEhrDeleteResponse() {
+        return new EhrDeleteResponse("patients", "1234567890", Arrays.asList("2431d4ff-f760-4ab9-8cd8-a3fc47846762", "c184cc19-86e9-4a95-b5b5-2f156900bb3c"));
     }
 }

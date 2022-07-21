@@ -14,7 +14,6 @@ import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
 import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
 import uk.nhs.prm.repo.re_registration.services.ehrRepo.EhrDeleteResponse;
-import uk.nhs.prm.repo.re_registration.services.ehrRepo.EhrRepoClient;
 
 import java.util.Arrays;
 
@@ -38,13 +37,10 @@ class ReRegistrationsHandlerTest {
     @Mock
     private ReRegistrationAuditPublisher auditPublisher;
 
-    @Mock
-    EhrRepoClient ehrRepoClient;
-
     @InjectMocks
     private ReRegistrationsHandler reRegistrationsHandler;
 
-    private ReRegistrationEvent reRegistrationEvent = getParsedMessage();
+    private ReRegistrationEvent reRegistrationEvent = createReRegistrationEvent();
 
     @BeforeEach
     void setUp(){
@@ -85,17 +81,8 @@ class ReRegistrationsHandlerTest {
         verify(auditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED"));
     }
 
-    @Test
-    void shouldPublishToQueueWhenPatientIsNotSuspendedWithAction() throws Exception {
-        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
-        when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
-        when(ehrRepoClient.deletePatientEhr(getParsedMessage().getNhsNumber())).thenReturn(getEhrDeleteResponse());
-        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
-        verify(auditPublisher, times(1)).sendMessage(any());
-        verify(auditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: [2431d4ff-f760-4ab9-8cd8-a3fc47846762, c184cc19-86e9-4a95-b5b5-2f156900bb3c]"));
-    }
 
-    private ReRegistrationEvent getParsedMessage() {
+    private ReRegistrationEvent createReRegistrationEvent() {
         return new ReRegistrationEvent("1234567890", "ABC123", "nemsMessageId", "2017-11-01T15:00:33+00:00");
     }
 
@@ -103,7 +90,7 @@ class ReRegistrationsHandlerTest {
         return new PdsAdaptorSuspensionStatusResponse("0000000000",isSuspended ,"currentOdsCode","managingOrganisation","etag",false);
     }
 
-    private EhrDeleteResponse getEhrDeleteResponse() {
+    private EhrDeleteResponse createSuccessfulEhrDeleteResponse() {
         return new EhrDeleteResponse("patients", "1234567890", Arrays.asList("2431d4ff-f760-4ab9-8cd8-a3fc47846762", "c184cc19-86e9-4a95-b5b5-2f156900bb3c"));
     }
 }

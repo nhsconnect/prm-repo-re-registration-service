@@ -57,9 +57,9 @@ public class ReRegistrationsHandler {
         return pdsAdaptorResponse.isSuspended();
     }
 
-    private void deleteEhr(ReRegistrationEvent reRegistrationEvent) throws Exception {
+    private void deleteEhr(ReRegistrationEvent reRegistrationEvent){
         log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
-        var ehrDeleteResponse = ehrRepoClient.deletePatientEhr(reRegistrationEvent.getNhsNumber());
+        var ehrDeleteResponse = ehrRepoClient.deletePatientEhr(reRegistrationEvent);
         sendAuditMessage(reRegistrationEvent, "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: " + ehrDeleteResponse.getConversationIds());
 
     }
