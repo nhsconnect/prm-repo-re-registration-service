@@ -16,7 +16,7 @@
                     <pattern>
                         {
                         "level": "%level",
-                        "service": "ehr-transfer-service",
+                        "service": "re-registration-service",
                         "class": "%C{0}",
                         "line": "%L",
                         "message": "%message",
