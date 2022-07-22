@@ -13,14 +13,9 @@ locals {
     { name = "PDS_ADAPTOR_AUTH_PASSWORD", value = data.aws_ssm_parameter.pds_adaptor_auth_password.value },
     { name = "RE_REGISTRATIONS_AUDIT_SNS_TOPIC_ARN", value = aws_sns_topic.re_registration_audit_topic.arn },
     { name = "CAN_SEND_DELETE_EHR_REQUEST", value = tostring(var.toggle_can_send_delete_ehr_request) },
-    {
-      name  = "RE_REGISTRATION_SERVICE_EHR_REPO_URL",
-      value = "https://ehr-repo.${var.environment}.non-prod.patient-deductions.nhs.uk"
-    }
-  ]
-  secret_environment_variables = [
-    { name      = "RE_REGISTRATION_SERVICE_AUTHORIZATION_KEYS_FOR_EHR_REPO",
-      valueFrom = data.aws_ssm_parameter.re_registration_service_authorization_keys_for_ehr_repo.value
+    { name  = "RE_REGISTRATION_SERVICE_EHR_REPO_URL", value = data.aws_ssm_parameter.pds_url.value },
+    { name  = "RE_REGISTRATION_SERVICE_AUTHORIZATION_KEYS_FOR_EHR_REPO",
+      value = data.aws_ssm_parameter.re_registration_service_authorization_keys_for_ehr_repo.value
     }
   ]
 }
@@ -44,8 +39,7 @@ resource "aws_ecs_task_definition" "task" {
     memory                = var.task_memory,
     log_region            = var.region,
     log_group             = local.task_log_group,
-    environment_variables = jsonencode(local.environment_variables),
-    secrets               = jsonencode(local.secret_environment_variables)
+    environment_variables = jsonencode(local.environment_variables)
   })
 
   tags = {

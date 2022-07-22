@@ -31,3 +31,7 @@ data "aws_ssm_parameter" "pds_adaptor_auth_password" {
 data "aws_ssm_parameter" "re_registration_service_authorization_keys_for_ehr_repo" {
   name = "/repo/${var.environment}/user-input/api-keys/ehr-repo/re-registration-service"
 }
+
+data "aws_ssm_parameter" "pds_url" {
+  name = "/repo/${var.environment}/output/prm-deductions-pds-adaptor/service-url"
+}
