@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.re_registration.services.ehrRepo;
+package uk.nhs.prm.repo.re_registration.ehr_repo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -17,14 +17,14 @@ import java.net.MalformedURLException;
 
 @Slf4j
 @Service
-public class EhrRepoClient {
+public class EhrRepoService {
     private final String ehrRepoUrl;
     private final String ehrRepoAuthKey;
     private final Tracer tracer;
     private final ReRegistrationAuditPublisher auditPublisher;
     private HttpClient httpClient;
 
-    public EhrRepoClient(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer, ReRegistrationAuditPublisher auditPublisher, HttpClient httpClient) throws MalformedURLException {
+    public EhrRepoService(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer, ReRegistrationAuditPublisher auditPublisher, HttpClient httpClient) throws MalformedURLException {
         this.ehrRepoUrl = ehrRepoUrl;
         this.ehrRepoAuthKey = ehrRepoAuthKey;
         this.tracer = tracer;

@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.re_registration.pds_adaptor;
+package uk.nhs.prm.repo.re_registration.pds;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
-import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
+import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
 
 @Slf4j
 @Service

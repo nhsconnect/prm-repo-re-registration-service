@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.re_registration.pds_adaptor;
+package uk.nhs.prm.repo.re_registration.pds;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.GetQueueAttributesResult;

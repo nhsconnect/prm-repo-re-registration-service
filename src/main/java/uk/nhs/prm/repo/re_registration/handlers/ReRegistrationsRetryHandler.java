@@ -6,7 +6,7 @@ import io.github.resilience4j.retry.RetryConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import uk.nhs.prm.repo.re_registration.pds_adaptor.IntermittentErrorPdsException;
+import uk.nhs.prm.repo.re_registration.pds.IntermittentErrorPdsException;
 
 import java.util.function.Function;
 

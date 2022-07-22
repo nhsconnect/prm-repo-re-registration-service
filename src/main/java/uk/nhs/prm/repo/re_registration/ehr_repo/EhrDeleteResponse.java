@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.re_registration.services.ehrRepo;
+package uk.nhs.prm.repo.re_registration.ehr_repo;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.AllArgsConstructor;

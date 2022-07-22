@@ -11,9 +11,9 @@ import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPub
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
-import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
-import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
-import uk.nhs.prm.repo.re_registration.services.ehrRepo.EhrDeleteResponse;
+import uk.nhs.prm.repo.re_registration.pds.PdsAdaptorService;
+import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
+import uk.nhs.prm.repo.re_registration.ehr_repo.EhrDeleteResponse;
 
 import java.util.Arrays;
 

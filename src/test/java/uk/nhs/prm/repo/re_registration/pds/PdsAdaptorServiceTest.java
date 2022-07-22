@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.re_registration.pds_adaptor;
+package uk.nhs.prm.repo.re_registration.pds;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
-import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
+import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;

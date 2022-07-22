@@ -1,4 +1,4 @@
-package uk.nhs.prm.repo.re_registration.services.ehrRepo;
+package uk.nhs.prm.repo.re_registration.ehr_repo;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class EhrRepoClientTest {
     @Mock
     HttpClient httpClient;
 
-    EhrRepoClient ehrRepoClient;
+    EhrRepoService ehrRepoService;
 
 
     @Captor
@@ -54,13 +54,13 @@ class EhrRepoClientTest {
 
     @BeforeEach
     void init() throws MalformedURLException {
-        ehrRepoClient = new EhrRepoClient(ehrRepoServiceUrl, ehrRepoAuthKey, tracer, reRegistrationAuditPublisher, httpClient);
+        ehrRepoService = new EhrRepoService(ehrRepoServiceUrl, ehrRepoAuthKey, tracer, reRegistrationAuditPublisher, httpClient);
     }
 
     @Test
     void shouldCallHttpClientWithCorrectUriAndUserNAmeAndPassword() {
         when(httpClient.delete(any(), any())).thenReturn(createDeleteEhrResponseJsonString());
-        ehrRepoClient.deletePatientEhr(getReRegistrationEvent());
+        ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         verify(httpClient).delete(url.capture(), authKey.capture());
         assertThat("ehr-repo-service-url/patients/1234567890").isEqualTo(url.getValue());
         assertThat("authKey").isEqualTo(authKey.getValue());
@@ -69,7 +69,7 @@ class EhrRepoClientTest {
     @Test
     void shouldReturnParsedEhrRepoResponseIfSuccessfulAndWhenEhrResponseReturns200Ok(){
         when(httpClient.delete(any(), any())).thenReturn(createDeleteEhrResponseJsonString());
-        var actualResponse = ehrRepoClient.deletePatientEhr(getReRegistrationEvent());
+        var actualResponse = ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         var expectedResponse = createExpectedSuccessfulEhrDeleteResponse();
         assertEquals(expectedResponse, actualResponse);
     }
@@ -77,21 +77,21 @@ class EhrRepoClientTest {
     @Test
     void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns404Error() {
         when(httpClient.delete(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
-        ehrRepoClient.deletePatientEhr(getReRegistrationEvent());
+        ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(),"NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
     }
 
     @Test
     void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns400Error() {
         when(httpClient.delete(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-        ehrRepoClient.deletePatientEhr(getReRegistrationEvent());
+        ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(),"NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
     }
 
     @Test
     void shouldThrowAnIntermittentErrorExceptionWhenEhrResponseReturns5xxError() {
         when(httpClient.delete(any(), any())).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
-        assertThrows(IntermittentErrorEhrRepoException.class, () -> ehrRepoClient.deletePatientEhr(getReRegistrationEvent()));
+        assertThrows(IntermittentErrorEhrRepoException.class, () -> ehrRepoService.deletePatientEhr(getReRegistrationEvent()));
     }
 
     private ReRegistrationEvent getReRegistrationEvent() {

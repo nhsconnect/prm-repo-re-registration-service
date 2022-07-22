@@ -8,9 +8,9 @@ import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPub
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
-import uk.nhs.prm.repo.re_registration.pds_adaptor.PdsAdaptorService;
-import uk.nhs.prm.repo.re_registration.pds_adaptor.model.PdsAdaptorSuspensionStatusResponse;
-import uk.nhs.prm.repo.re_registration.services.ehrRepo.EhrRepoClient;
+import uk.nhs.prm.repo.re_registration.pds.PdsAdaptorService;
+import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
+import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
 
 @Slf4j
 @Component
@@ -21,7 +21,7 @@ public class ReRegistrationsHandler {
     private final PdsAdaptorService pdsAdaptorService;
     private final ToggleConfig toggleConfig;
     private final ReRegistrationAuditPublisher auditPublisher;
-    private final EhrRepoClient ehrRepoClient;
+    private final EhrRepoService ehrRepoService;
 
     public void process(String payload) {
 
@@ -59,7 +59,7 @@ public class ReRegistrationsHandler {
 
     private void deleteEhr(ReRegistrationEvent reRegistrationEvent){
         log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
-        var ehrDeleteResponse = ehrRepoClient.deletePatientEhr(reRegistrationEvent);
+        var ehrDeleteResponse = ehrRepoService.deletePatientEhr(reRegistrationEvent);
         sendAuditMessage(reRegistrationEvent, "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: " + ehrDeleteResponse.getConversationIds());
 
     }
