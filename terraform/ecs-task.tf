@@ -20,7 +20,7 @@ locals {
   ]
   secret_environment_variables = [
     { name      = "RE_REGISTRATION_SERVICE_AUTHORIZATION_KEYS_FOR_EHR_REPO",
-      valueFrom = data.aws_ssm_parameter.re_registration_service_authorization_keys_for_ehr_repo.arn
+      valueFrom = data.aws_ssm_parameter.re_registration_service_authorization_keys_for_ehr_repo.value
     }
   ]
 }
