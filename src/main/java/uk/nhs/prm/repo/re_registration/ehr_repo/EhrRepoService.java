@@ -13,8 +13,6 @@ import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPub
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
-import java.net.MalformedURLException;
-
 @Slf4j
 @Service
 public class EhrRepoService {
@@ -24,7 +22,7 @@ public class EhrRepoService {
     private final ReRegistrationAuditPublisher auditPublisher;
     private HttpClient httpClient;
 
-    public EhrRepoService(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer, ReRegistrationAuditPublisher auditPublisher, HttpClient httpClient) throws MalformedURLException {
+    public EhrRepoService(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer, ReRegistrationAuditPublisher auditPublisher, HttpClient httpClient) {
         this.ehrRepoUrl = ehrRepoUrl;
         this.ehrRepoAuthKey = ehrRepoAuthKey;
         this.tracer = tracer;
@@ -45,13 +43,8 @@ public class EhrRepoService {
                 throw new RuntimeException();
             }
         } catch (HttpStatusCodeException e) {
-            try{
-                handleErrorResponse(reRegistrationEvent, e);
-            }catch (IntermittentErrorEhrRepoException intermittentErrorEhrRepoException) {
-                log.info("retryable error");
-                throw intermittentErrorEhrRepoException;
-            }
-            throw e;
+            handleErrorResponse(reRegistrationEvent, e);
+            return null;
         } catch (Exception e) {
             log.error("Error during the performing ehr delete request.");
             throw e;
@@ -71,8 +64,10 @@ public class EhrRepoService {
         } else if (e.getStatusCode().is5xxServerError()) {
             log.info("Encountered server error with status code : {}", e.getStatusCode());
             throw new IntermittentErrorEhrRepoException("Encountered error when calling ehr-repo DELETE patient endpoint", e);
+        } else {
+            log.info("Encountered server error with status code : {}", e.getStatusCode());
+            throw e;
         }
-
     }
 
     private EhrDeleteResponse getParsedDeleteEhrResponseBody(String responseBody) {
