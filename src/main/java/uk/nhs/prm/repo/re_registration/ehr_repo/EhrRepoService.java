@@ -41,11 +41,21 @@ public class EhrRepoService {
 
             if (isDeleteRequestSuccessful(ehrRepoResponse)) {
                 return getParsedDeleteEhrResponseBody(ehrRepoResponse.getBody());
+            } else {
+                throw new RuntimeException();
             }
         } catch (HttpStatusCodeException e) {
-            handleErrorResponse(reRegistrationEvent, e);
+            try{
+                handleErrorResponse(reRegistrationEvent, e);
+            }catch (IntermittentErrorEhrRepoException intermittentErrorEhrRepoException) {
+                log.info("retryable error");
+                throw intermittentErrorEhrRepoException;
+            }
+            throw e;
+        } catch (Exception e) {
+            log.error("Error during the performing ehr delete request.");
+            throw e;
         }
-        return null;
     }
 
     private void handleErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
@@ -54,12 +64,11 @@ public class EhrRepoService {
             log.info("Encountered client error with status code : {}", e.getStatusCode());
             auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
                     "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
-        }else if(e.getStatusCode().equals(HttpStatus.BAD_REQUEST)){
+        } else if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
             log.info("Encountered client error with status code : {}", e.getStatusCode());
             auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
                     "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
-        }
-        else if (e.getStatusCode().is5xxServerError()) {
+        } else if (e.getStatusCode().is5xxServerError()) {
             log.info("Encountered server error with status code : {}", e.getStatusCode());
             throw new IntermittentErrorEhrRepoException("Encountered error when calling ehr-repo DELETE patient endpoint", e);
         }

@@ -71,6 +71,14 @@ class PdsAdaptorServiceTest {
     }
 
     @Test
+    void shouldReturnParsedPdsAdaptorResponseWhenManagingOrgNull(){
+        when(httpClient.get(any(), any(), any())).thenReturn(getPdsResponseStringWithSuspendedStatusAndNullManagingOrg(true));
+        var actualResponse = pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
+        var expectedResponse = new PdsAdaptorSuspensionStatusResponse("0000000000",true ,"currentOdsCode",null,"etag",false);
+        assertEquals(expectedResponse, actualResponse);
+    }
+
+    @Test
     void shouldPublishStatusMessageOnAuditTopicWhenPDSAdaptorReturns4xxError() {
         when(httpClient.get(any(), any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
         pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
@@ -85,6 +93,11 @@ class PdsAdaptorServiceTest {
 
     private ResponseEntity<String> getPdsResponseStringWithSuspendedStatus(boolean isSuspended) {
         var pdsResponseString = "{\"nhsNumber\":\"0000000000\",\"isSuspended\":" + isSuspended + ",\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":\"managingOrganisation\",\"recordETag\":\"etag\",\"isDeceased\":false}";
+        return new ResponseEntity<>(pdsResponseString, HttpStatus.OK);
+    }
+
+    private ResponseEntity<String> getPdsResponseStringWithSuspendedStatusAndNullManagingOrg(boolean isSuspended) {
+        var pdsResponseString = "{\"nhsNumber\":\"0000000000\",\"isSuspended\":" + isSuspended + ",\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":null,\"recordETag\":\"etag\",\"isDeceased\":false}";
         return new ResponseEntity<>(pdsResponseString, HttpStatus.OK);
     }
 
