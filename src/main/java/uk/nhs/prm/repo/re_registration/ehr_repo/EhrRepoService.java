@@ -82,6 +82,7 @@ public class EhrRepoService {
     }
 
     private boolean isDeleteRequestSuccessful(HttpResponse<String> response) {
+        log.info("response body: " + response.body());
         return response.statusCode() == 200;
     }
 

@@ -39,6 +39,7 @@ public class HttpClient {
         try {
             response = java.net.http.HttpClient.newHttpClient()
                     .send(request, HttpResponse.BodyHandlers.ofString());
+            log.info("ehr response status code is: " + response.statusCode());
         } catch (Exception e) {
             log.error("Error occurred during ehr-repo delete call", e.getMessage());
             throw e;
