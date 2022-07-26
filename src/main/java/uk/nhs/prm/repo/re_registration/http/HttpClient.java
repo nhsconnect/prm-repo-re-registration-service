@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.re_registration.http;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -7,26 +8,36 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpResponse;
 import java.util.Arrays;
 
 @Component
+@RequiredArgsConstructor
 public class HttpClient {
 
     public static final String AUTHORIZATION = "Authorization";
     private final RestTemplate restTemplate;
     private final Tracer tracer;
 
-    public HttpClient(RestTemplate restTemplate, Tracer tracer) {
-        this.restTemplate = restTemplate;
-        this.tracer = tracer;
-    }
-
     public ResponseEntity<String> get(String uri, String userName, String password) {
         return restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(getHeaders(userName, password)), String.class);
     }
 
-    public ResponseEntity<String> delete(String uri, String authKey) {
-        return restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(getHeadersForEhrRepo(authKey)), String.class);
+    public HttpResponse<String> delete(String uri, String authKey) throws IOException, InterruptedException {
+
+        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                .uri(URI.create(uri))
+                .header("Authorization", authKey)
+                .header("Content-Type", "application/json")
+                .header("traceId", tracer.getTraceId())
+                .DELETE().build();
+
+        return java.net.http.HttpClient.newHttpClient()
+                .send(request, HttpResponse.BodyHandlers.ofString());
+
+//        return restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(getHeadersForEhrRepo(authKey)), String.class);
     }
 
     private HttpHeaders getHeadersForEhrRepo(String authKey) {

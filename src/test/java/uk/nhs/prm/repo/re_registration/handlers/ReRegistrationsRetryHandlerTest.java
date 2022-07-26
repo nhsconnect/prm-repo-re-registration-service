@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.pds.IntermittentErrorPdsException;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,7 +30,7 @@ class ReRegistrationsRetryHandlerTest {
     }
 
     @Test
-    public void shouldRetryUpToThreeTimesWhenIntermittentErrorPdsExceptionIsThrown() {
+    public void shouldRetryUpToThreeTimesWhenIntermittentErrorPdsExceptionIsThrown() throws IOException, InterruptedException {
         doThrow(IntermittentErrorPdsException.class).when(reRegistrationsHandler).process(any());
         assertThrows(IntermittentErrorPdsException.class, () -> retryHandler.handle(getParsedMessage().toJsonString()));
         verify(reRegistrationsHandler, times(3)).process(any());

@@ -12,6 +12,8 @@ import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 import uk.nhs.prm.repo.re_registration.pds.PdsAdaptorService;
 import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
 
+import java.io.IOException;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -23,7 +25,7 @@ public class ReRegistrationsHandler {
     private final ReRegistrationAuditPublisher auditPublisher;
     private final EhrRepoService ehrRepoService;
 
-    public void process(String payload) {
+    public void process(String payload) throws IOException, InterruptedException {
 
         log.info("RECEIVED: Re-registrations Event Message, payload length: " + payload.length());
         var reRegistrationEvent = parser.parse(payload);
@@ -38,7 +40,7 @@ public class ReRegistrationsHandler {
         }
     }
 
-    private void handlePdsResponse(ReRegistrationEvent reRegistrationEvent, boolean isSuspended) {
+    private void handlePdsResponse(ReRegistrationEvent reRegistrationEvent, boolean isSuspended) throws IOException, InterruptedException {
         if (isSuspended) {
             log.info("Patient is suspended");
             sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED");
@@ -52,7 +54,7 @@ public class ReRegistrationsHandler {
         return pdsAdaptorResponse.isSuspended();
     }
 
-    private void deleteEhr(ReRegistrationEvent reRegistrationEvent) {
+    private void deleteEhr(ReRegistrationEvent reRegistrationEvent) throws IOException, InterruptedException {
         log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
         var ehrDeleteResponse = ehrRepoService.deletePatientEhr(reRegistrationEvent);
         sendAuditMessage(reRegistrationEvent, "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: " + ehrDeleteResponse.getConversationIds());

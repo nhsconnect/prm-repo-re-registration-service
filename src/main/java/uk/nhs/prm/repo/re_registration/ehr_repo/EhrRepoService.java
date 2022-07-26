@@ -13,6 +13,9 @@ import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPub
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
+import java.io.IOException;
+import java.net.http.HttpResponse;
+
 @Slf4j
 @Service
 public class EhrRepoService {
@@ -20,7 +23,7 @@ public class EhrRepoService {
     private final String ehrRepoAuthKey;
     private final Tracer tracer;
     private final ReRegistrationAuditPublisher auditPublisher;
-    private HttpClient httpClient;
+    private final HttpClient httpClient;
 
     public EhrRepoService(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer, ReRegistrationAuditPublisher auditPublisher, HttpClient httpClient) {
         this.ehrRepoUrl = ehrRepoUrl;
@@ -30,7 +33,7 @@ public class EhrRepoService {
         this.httpClient = httpClient;
     }
 
-    public EhrDeleteResponseContent deletePatientEhr(ReRegistrationEvent reRegistrationEvent) {
+    public EhrDeleteResponseContent deletePatientEhr(ReRegistrationEvent reRegistrationEvent) throws IOException, InterruptedException {
 
         var url = getPatientDeleteEhrUrl(reRegistrationEvent.getNhsNumber());
         try {
@@ -38,7 +41,7 @@ public class EhrRepoService {
             var ehrRepoResponse = httpClient.delete(url, ehrRepoAuthKey);
 
             if (isDeleteRequestSuccessful(ehrRepoResponse)) {
-                return getParsedDeleteEhrResponseBody(ehrRepoResponse.getBody());
+                return getParsedDeleteEhrResponseBody(ehrRepoResponse.body());
             } else {
                 throw new RuntimeException();
             }
@@ -78,8 +81,8 @@ public class EhrRepoService {
         }
     }
 
-    private boolean isDeleteRequestSuccessful(ResponseEntity<String> response) {
-        return response.getStatusCode().is2xxSuccessful();
+    private boolean isDeleteRequestSuccessful(HttpResponse<String> response) {
+        return response.statusCode() == 200;
     }
 
     private String getPatientDeleteEhrUrl(String nhsNumber) {

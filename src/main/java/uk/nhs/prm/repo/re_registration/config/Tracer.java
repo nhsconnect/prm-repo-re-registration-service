@@ -25,6 +25,10 @@ public class Tracer {
         handleNemsMessageId(message);
     }
 
+    public void setTraceId(String traceId) {
+        MDC.put(TRACE_ID, traceId);
+    }
+
     private void handleTraceId(Message message) throws JMSException {
         if (message.getStringProperty(TRACE_ID) == null) {
             log.info("The message has no trace ID attribute, we'll create and assign one.");
@@ -36,10 +40,6 @@ public class Tracer {
 
     private String createTraceId() {
         return UUID.randomUUID().toString();
-    }
-
-    private void setTraceId(String traceId) {
-        MDC.put(TRACE_ID, traceId);
     }
 
     public String getTraceId() {
