@@ -26,6 +26,9 @@ public class HttpClient {
     }
 
     public ResponseEntity<String> delete(String uri, String authKey) {
+
+
+
         return restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(createHeader(authKey)), String.class);
     }
 
@@ -39,7 +42,7 @@ public class HttpClient {
 
     private MultiValueMap<String, String> createHeader(String authKey) {
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-        headers.add("accept", "application/json");
+        headers.add("Content-Type", "application/json");
         headers.add(AUTHORIZATION, authKey);
         headers.add("traceId", tracer.getTraceId());
 
