@@ -46,11 +46,13 @@ public class PdsAdaptorService {
 
             if (isSuccessful(pdsAdaptorResponseEntity)) {
                 return getParsedPdsAdaptorResponseBody(pdsAdaptorResponseEntity.getBody());
+            } else {
+                throw new RuntimeException();
             }
         } catch (HttpStatusCodeException e) {
             handleErrorResponse(reRegistrationEvent, e);
+            throw e;
         }
-        return null;
     }
 
     private void handleErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
@@ -60,7 +62,7 @@ public class PdsAdaptorService {
             reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
                     "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
         } else if (e.getStatusCode().is5xxServerError()) {
-            log.info("Caught retryable exception ", e.getMessage());
+            log.info("Caught retryable exception: " + e.getMessage());
             log.info("Encountered server error with status code : {}", e.getStatusCode());
             throw new IntermittentErrorPdsException("Encountered error when calling pds get patient endpoint", e);
         }

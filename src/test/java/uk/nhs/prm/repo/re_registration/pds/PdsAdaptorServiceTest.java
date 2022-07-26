@@ -81,7 +81,7 @@ class PdsAdaptorServiceTest {
     @Test
     void shouldPublishStatusMessageOnAuditTopicWhenPDSAdaptorReturns4xxError() {
         when(httpClient.get(any(), any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
-        pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
+        assertThrows(HttpClientErrorException.class, () -> pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent()));
         verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
     }
 
