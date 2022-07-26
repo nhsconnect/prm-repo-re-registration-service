@@ -60,6 +60,7 @@ public class PdsAdaptorService {
             reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
                     "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
         } else if (e.getStatusCode().is5xxServerError()) {
+            log.info("Caught retryable exception ", e.getMessage());
             log.info("Encountered server error with status code : {}", e.getStatusCode());
             throw new IntermittentErrorPdsException("Encountered error when calling pds get patient endpoint", e);
         }

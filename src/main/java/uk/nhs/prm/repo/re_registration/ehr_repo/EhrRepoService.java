@@ -30,7 +30,7 @@ public class EhrRepoService {
         this.httpClient = httpClient;
     }
 
-    public EhrDeleteResponse deletePatientEhr(ReRegistrationEvent reRegistrationEvent) {
+    public EhrDeleteResponseContent deletePatientEhr(ReRegistrationEvent reRegistrationEvent) {
 
         var url = getPatientDeleteEhrUrl(reRegistrationEvent.getNhsNumber());
         try {
@@ -44,7 +44,7 @@ public class EhrRepoService {
             }
         } catch (HttpStatusCodeException e) {
             handleErrorResponse(reRegistrationEvent, e);
-            return null;
+            throw e;
         } catch (Exception e) {
             log.error("Error during the performing ehr delete request.");
             throw e;
@@ -64,16 +64,14 @@ public class EhrRepoService {
         } else if (e.getStatusCode().is5xxServerError()) {
             log.info("Encountered server error with status code : {}", e.getStatusCode());
             throw new IntermittentErrorEhrRepoException("Encountered error when calling ehr-repo DELETE patient endpoint", e);
-        } else {
-            log.info("Encountered server error with status code : {}", e.getStatusCode());
-            throw e;
         }
+
     }
 
-    private EhrDeleteResponse getParsedDeleteEhrResponseBody(String responseBody) {
+    private EhrDeleteResponseContent getParsedDeleteEhrResponseBody(String responseBody) {
         try {
             log.info("Trying to parse ehr-repo response");
-            return new ObjectMapper().readValue(responseBody, EhrDeleteResponse.class);
+            return new ObjectMapper().readValue(responseBody, EhrDeleteResponse.class).getEhrDeleteResponseContent();
         } catch (Exception e) {
             log.error("Encountered Exception while trying to request patient DELETE ehr");
             throw new RuntimeException(e);

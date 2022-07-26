@@ -67,7 +67,7 @@ class EhrRepoClientTest {
     }
 
     @Test
-    void shouldReturnParsedEhrRepoResponseIfSuccessfulAndWhenEhrResponseReturns200Ok(){
+    void shouldReturnParsedEhrRepoResponseIfSuccessfulAndWhenEhrResponseReturns200Ok() {
         when(httpClient.delete(any(), any())).thenReturn(createDeleteEhrResponseJsonString());
         var actualResponse = ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         var expectedResponse = createExpectedSuccessfulEhrDeleteResponse();
@@ -77,15 +77,19 @@ class EhrRepoClientTest {
     @Test
     void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns404Error() {
         when(httpClient.delete(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
-        ehrRepoService.deletePatientEhr(getReRegistrationEvent());
-        verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(),"NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
+        assertThrows(HttpClientErrorException.class, () -> {
+            ehrRepoService.deletePatientEhr(getReRegistrationEvent());
+        });
+        verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
     }
 
     @Test
     void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns400Error() {
         when(httpClient.delete(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-        ehrRepoService.deletePatientEhr(getReRegistrationEvent());
-        verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(),"NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
+        assertThrows(HttpClientErrorException.class, () -> {
+            ehrRepoService.deletePatientEhr(getReRegistrationEvent());
+        });
+        verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
     }
 
     @Test
@@ -99,12 +103,15 @@ class EhrRepoClientTest {
     }
 
 
-    private ResponseEntity<String> createDeleteEhrResponseJsonString(){
-        var ehrRepoDeleteResponse = "{\"type\":\"patients\", \"id\":\"1234567890\", \"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\"," + "\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]}";
+    private ResponseEntity<String> createDeleteEhrResponseJsonString() {
+        var ehrRepoDeleteResponse = "{\"data\":" +
+                "{\"type\":\"patients\", " +
+                "\"id\":\"1234567890\", " +
+                "\"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\"," + "\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]}}";
         return new ResponseEntity<>(ehrRepoDeleteResponse, HttpStatus.OK);
     }
 
-    private EhrDeleteResponse createExpectedSuccessfulEhrDeleteResponse() {
-        return new EhrDeleteResponse("patients", "1234567890", Arrays.asList("2431d4ff-f760-4ab9-8cd8-a3fc47846762", "c184cc19-86e9-4a95-b5b5-2f156900bb3c"));
+    private EhrDeleteResponseContent createExpectedSuccessfulEhrDeleteResponse() {
+        return new EhrDeleteResponseContent("patients", "1234567890", Arrays.asList("2431d4ff-f760-4ab9-8cd8-a3fc47846762", "c184cc19-86e9-4a95-b5b5-2f156900bb3c"));
     }
 }

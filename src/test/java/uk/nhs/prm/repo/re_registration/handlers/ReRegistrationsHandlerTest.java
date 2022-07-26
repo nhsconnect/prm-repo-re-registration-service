@@ -7,7 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
-import uk.nhs.prm.repo.re_registration.ehr_repo.EhrDeleteResponse;
+import uk.nhs.prm.repo.re_registration.ehr_repo.EhrDeleteResponseContent;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
@@ -47,12 +47,12 @@ class ReRegistrationsHandlerTest {
     private ReRegistrationEvent reRegistrationEvent = createReRegistrationEvent();
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         when(parser.parse(any())).thenReturn(reRegistrationEvent);
     }
 
     @Test
-    public void shouldLogTheLengthOfMessageReceived() {
+    public void shouldLogTheLengthOfMessageReceived() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
         var testLogAppender = addTestLogAppender();
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -61,7 +61,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() {
+    void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -69,7 +69,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldNotCallPdsAndSendMessageToAuditTopicWithCanSendDeleteEhrRequestIsFalse() {
+    void shouldNotCallPdsAndSendMessageToAuditTopicWithCanSendDeleteEhrRequestIsFalse() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verifyNoInteractions(pdsAdaptorService);
@@ -78,7 +78,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldPublishToQueueWhenPatientIsSuspendedWithNoAction() {
+    void shouldPublishToQueueWhenPatientIsSuspendedWithNoAction() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -86,7 +86,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldPublishToQueueWhenPatientIsNotSuspendedWithAction() {
+    void shouldPublishToQueueWhenPatientIsNotSuspendedWithAction() throws Exception {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenReturn(createSuccessfulEhrDeleteResponse());
@@ -101,10 +101,10 @@ class ReRegistrationsHandlerTest {
     }
 
     private PdsAdaptorSuspensionStatusResponse getPdsResponseStringWithSuspendedStatus(boolean isSuspended) {
-        return new PdsAdaptorSuspensionStatusResponse("0000000000",isSuspended ,"currentOdsCode","managingOrganisation","etag",false);
+        return new PdsAdaptorSuspensionStatusResponse("0000000000", isSuspended, "currentOdsCode", "managingOrganisation", "etag", false);
     }
 
-    private EhrDeleteResponse createSuccessfulEhrDeleteResponse() {
-        return new EhrDeleteResponse("patients", "1234567890", Arrays.asList("2431d4ff-f760-4ab9-8cd8-a3fc47846762", "c184cc19-86e9-4a95-b5b5-2f156900bb3c"));
+    private EhrDeleteResponseContent createSuccessfulEhrDeleteResponse() {
+        return new EhrDeleteResponseContent("patients", "1234567890", Arrays.asList("2431d4ff-f760-4ab9-8cd8-a3fc47846762", "c184cc19-86e9-4a95-b5b5-2f156900bb3c"));
     }
 }
