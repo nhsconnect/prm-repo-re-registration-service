@@ -27,7 +27,7 @@ public class HttpClient {
 
     public ResponseEntity<String> delete(String uri, String authKey) {
 
-        return restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(getHeadersForEhrRepo(authKey)), String.class);
+        return restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(createHeader(authKey)), String.class);
     }
 
     private HttpHeaders getHeadersForEhrRepo(String authKey) {
@@ -35,6 +35,15 @@ public class HttpClient {
         headers.add("accept", "application/json");
         headers.add(AUTHORIZATION, authKey);
         headers.add("traceId", tracer.getTraceId());
+        return headers;
+    }
+
+    private MultiValueMap<String, String> createHeader(String authKey) {
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.add("accept", "application/json");
+        headers.add(AUTHORIZATION, authKey);
+        headers.add("traceId", tracer.getTraceId());
+
         return headers;
     }
 
