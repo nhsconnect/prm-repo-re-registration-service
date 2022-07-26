@@ -41,16 +41,7 @@ public class ReRegistrationsRetryHandler {
     }
 
     public Void processOnce(String payload) {
-        try {
-            reRegistrationsHandler.process(payload);
-        } catch (Exception e) {
-            if (RETRYABLE_EXCEPTION_CLASS.isInstance(e)) {
-                log.info("Caught retryable exception in ReRegistrationsHandler", e);
-            } else {
-                log.error("Uncaught exception in ReRegistrationsHandler", e);
-            }
-            throw e;
-        }
+        reRegistrationsHandler.process(payload);
         return null;
     }
 

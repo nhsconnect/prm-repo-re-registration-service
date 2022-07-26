@@ -10,11 +10,9 @@ import uk.nhs.prm.repo.re_registration.pds.IntermittentErrorPdsException;
 
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
 
 @ExtendWith(MockitoExtension.class)
 class ReRegistrationsRetryHandlerTest {
@@ -31,17 +29,7 @@ class ReRegistrationsRetryHandlerTest {
     }
 
     @Test
-    public void shouldLogRetryableExceptionIfIntermittentErrorPdsExceptionIsThrown() throws Exception {
-        var testLogAppender = addTestLogAppender();
-        doThrow(IntermittentErrorPdsException.class).when(reRegistrationsHandler).process(any());
-        assertThrows(IntermittentErrorPdsException.class, () -> retryHandler.handle(getParsedMessage().toJsonString()));
-
-        var loggedEvent = testLogAppender.findLoggedEvent("Caught retryable exception in ReRegistrationsHandler");
-        assertThat(loggedEvent).isNotNull();
-    }
-
-    @Test
-    public void shouldRetryUpToThreeTimesWhenIntermittentErrorPdsExceptionIsThrown() throws Exception {
+    public void shouldRetryUpToThreeTimesWhenIntermittentErrorPdsExceptionIsThrown() {
         doThrow(IntermittentErrorPdsException.class).when(reRegistrationsHandler).process(any());
         assertThrows(IntermittentErrorPdsException.class, () -> retryHandler.handle(getParsedMessage().toJsonString()));
         verify(reRegistrationsHandler, times(3)).process(any());

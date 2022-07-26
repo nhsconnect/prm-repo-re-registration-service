@@ -32,7 +32,7 @@ public class EhrRepoService {
         this.httpClient = httpClient;
     }
 
-    public EhrDeleteResponse deletePatientEhr(ReRegistrationEvent reRegistrationEvent) {
+    public EhrDeleteResponseContent deletePatientEhr(ReRegistrationEvent reRegistrationEvent) {
 
         var url = getPatientDeleteEhrUrl(reRegistrationEvent.getNhsNumber());
         try {
@@ -45,12 +45,8 @@ public class EhrRepoService {
                 throw new RuntimeException();
             }
         } catch (HttpStatusCodeException e) {
-            try{
-                handleErrorResponse(reRegistrationEvent, e);
-            }catch (IntermittentErrorEhrRepoException intermittentErrorEhrRepoException) {
-                log.info("retryable error");
-                throw intermittentErrorEhrRepoException;
-            }
+
+            handleErrorResponse(reRegistrationEvent, e);
             throw e;
         } catch (Exception e) {
             log.error("Error during the performing ehr delete request.");
@@ -75,10 +71,10 @@ public class EhrRepoService {
 
     }
 
-    private EhrDeleteResponse getParsedDeleteEhrResponseBody(String responseBody) {
+    private EhrDeleteResponseContent getParsedDeleteEhrResponseBody(String responseBody) {
         try {
             log.info("Trying to parse ehr-repo response");
-            return new ObjectMapper().readValue(responseBody, EhrDeleteResponse.class);
+            return new ObjectMapper().readValue(responseBody, EhrDeleteResponse.class).getEhrDeleteResponseContent();
         } catch (Exception e) {
             log.error("Encountered Exception while trying to request patient DELETE ehr");
             throw new RuntimeException(e);

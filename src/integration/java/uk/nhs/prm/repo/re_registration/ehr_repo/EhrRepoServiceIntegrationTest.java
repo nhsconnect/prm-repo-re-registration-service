@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest()
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration( classes = LocalStackAwsConfig.class)
+@ContextConfiguration(classes = LocalStackAwsConfig.class)
 @DirtiesContext
 public class EhrRepoServiceIntegrationTest {
     @Autowired
@@ -69,10 +69,14 @@ public class EhrRepoServiceIntegrationTest {
 
     private void ehrRepo200Response() {
         stubFor(delete(urlMatching("/patients/" + NHS_NUMBER))
-                .withHeader("Authorization", matching("Basic "+ authKey))
+                .withHeader("Authorization", matching("Basic " + authKey))
                 .willReturn(aResponse()
                         .withStatus(200)
-                        .withBody("{\"type\":\"patients\", \"id\":"+ NHS_NUMBER +", \"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\"," + "\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]}")
+                        .withBody("{\n" +
+                                "  \"data\": {\n" +
+                                "    \"type\": \"patients\",\n" +
+                                "    \"id\": " + NHS_NUMBER + ",\n" +
+                                "    \"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\"," + "\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]}}")
                         .withHeader("Content-Type", "application/json")));
     }
 
