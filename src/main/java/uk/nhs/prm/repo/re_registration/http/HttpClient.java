@@ -11,6 +11,7 @@ import uk.nhs.prm.repo.re_registration.config.Tracer;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 
@@ -28,13 +29,20 @@ public class HttpClient {
     }
 
     public HttpResponse<String> delete(String uri, String authKey) throws IOException, InterruptedException {
+        URI ehrUri = URI.create(uri);
+        log.info("ehr-repo url: " + ehrUri.toURL());
+        java.net.http.HttpRequest request = null;
+        try {
+            request = java.net.http.HttpRequest.newBuilder()
+                    .uri(new URI(uri))
+                    .header("Authorization", authKey)
+                    .header("Content-Type", "application/json")
+                    .header("traceId", tracer.getTraceId())
 
-        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .header("Authorization", authKey)
-                .header("Content-Type", "application/json")
-                .header("traceId", tracer.getTraceId())
-                .DELETE().build();
+                    .DELETE().build();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
         HttpResponse response;
         try {
             response = java.net.http.HttpClient.newHttpClient()
