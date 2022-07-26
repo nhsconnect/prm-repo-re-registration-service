@@ -69,7 +69,7 @@ public class EhrRepoServiceIntegrationTest {
 
     private void ehrRepo200Response() {
         stubFor(delete(urlMatching("/patients/" + NHS_NUMBER))
-                .withHeader("Authorization", matching("Basic " + authKey))
+                .withHeader("Authorization", matching(authKey))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withBody("{\n" +

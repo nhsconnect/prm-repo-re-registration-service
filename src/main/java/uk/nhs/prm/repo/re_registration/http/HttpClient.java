@@ -10,6 +10,7 @@ import java.util.Arrays;
 @Component
 public class HttpClient {
 
+    public static final String AUTHORIZATION = "Authorization";
     private final RestTemplate restTemplate;
     private final Tracer tracer;
 
@@ -29,7 +30,7 @@ public class HttpClient {
     private HttpHeaders getHeadersForEhrRepo(String authKey) {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.setBasicAuth(authKey);
+        headers.set(AUTHORIZATION, authKey);
         headers.add("traceId", tracer.getTraceId());
         return headers;
     }
