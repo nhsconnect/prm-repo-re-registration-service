@@ -1,6 +1,7 @@
 package uk.nhs.prm.repo.re_registration.http;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class HttpClient {
 
     public static final String AUTHORIZATION = "Authorization";
@@ -33,11 +35,15 @@ public class HttpClient {
                 .header("Content-Type", "application/json")
                 .header("traceId", tracer.getTraceId())
                 .DELETE().build();
-
-        return java.net.http.HttpClient.newHttpClient()
-                .send(request, HttpResponse.BodyHandlers.ofString());
-
-//        return restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(getHeadersForEhrRepo(authKey)), String.class);
+        HttpResponse response;
+        try {
+            response = java.net.http.HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            log.error("Error occurred during ehr-repo delete call", e.getMessage());
+            throw e;
+        }
+        return response;
     }
 
     private HttpHeaders getHeadersForEhrRepo(String authKey) {
