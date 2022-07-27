@@ -54,11 +54,11 @@ resource "aws_security_group" "ecs-tasks-sg" {
   vpc_id = data.aws_ssm_parameter.deductions_private_vpc_id.value
 
   egress {
-    description = "Allow all outbound HTTPS traffic in vpc"
-    protocol    = "tcp"
-    from_port   = 443
-    to_port     = 443
-    cidr_blocks = [data.aws_vpc.private_vpc.cidr_block]
+    description = "Allow outbound to deductions private and deductions core"
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = [data.aws_vpc.deductions-private.cidr_block, data.aws_vpc.deductions-core.cidr_block]
   }
 
   egress {
@@ -76,6 +76,15 @@ resource "aws_security_group" "ecs-tasks-sg" {
   }
 }
 
+resource "aws_security_group_rule" "ehr-transfer-service-to-ehr-repo" {
+  type                     = "ingress"
+  protocol                 = "TCP"
+  from_port                = 443
+  to_port                  = 443
+  security_group_id        = data.aws_ssm_parameter.service-to-ehr-repo-sg-id.value
+  source_security_group_id = aws_security_group.ecs-tasks-sg.id
+}
+
 resource "aws_ssm_parameter" "ecs_task_security_group" {
   name  = "/repo/${var.environment}/output/${var.component_name}/ecs-sg-id"
   type  = "String"
@@ -86,10 +95,6 @@ resource "aws_ssm_parameter" "ecs_task_security_group" {
     CreatedBy   = var.repo_name
     Environment = var.environment
   }
-}
-
-data "aws_vpc" "private_vpc" {
-  id = data.aws_ssm_parameter.deductions_private_vpc_id.value
 }
 
 data "aws_ssm_parameter" "s3_prefix_list_id" {

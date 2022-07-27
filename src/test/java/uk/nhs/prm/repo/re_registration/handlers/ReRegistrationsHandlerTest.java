@@ -6,9 +6,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrDeleteResponseContent;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
+import uk.nhs.prm.repo.re_registration.ehr_repo.IntermittentErrorEhrRepoException;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
@@ -19,6 +22,7 @@ import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusRespo
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
@@ -93,6 +97,33 @@ class ReRegistrationsHandlerTest {
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verify(ehrRepoService).deletePatientEhr(reRegistrationEvent);
         verify(auditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: [2431d4ff-f760-4ab9-8cd8-a3fc47846762, c184cc19-86e9-4a95-b5b5-2f156900bb3c]"));
+    }
+
+
+    @Test
+    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns404Error() {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
+        when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND) {});
+        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
+        verify(auditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
+    }
+
+    @Test
+    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns400Error() {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
+        when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST) {});
+        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
+        verify(auditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
+    }
+
+    @Test
+    void shouldThrowAnIntermittentErrorExceptionWhenEhrResponseReturns5xxError() {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
+        when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR) {});
+        assertThrows(IntermittentErrorEhrRepoException.class, () -> reRegistrationsHandler.process(reRegistrationEvent.toJsonString()));
     }
 
 

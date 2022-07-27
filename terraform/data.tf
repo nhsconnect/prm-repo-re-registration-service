@@ -35,3 +35,19 @@ data "aws_ssm_parameter" "re_registration_service_authorization_keys_for_ehr_rep
 data "aws_ssm_parameter" "pds_url" {
   name = "/repo/${var.environment}/output/prm-deductions-pds-adaptor/service-url"
 }
+
+data "aws_ssm_parameter" "service-to-ehr-repo-sg-id" {
+  name = "/repo/${var.environment}/output/prm-deductions-ehr-repository/service-to-ehr-repo-sg-id"
+}
+
+data "aws_vpc" "deductions-private" {
+  id = data.aws_ssm_parameter.deductions_private_vpc_id.value
+}
+
+data "aws_vpc" "deductions-core" {
+  id = data.aws_ssm_parameter.deductions_core_vpc_id.value
+}
+
+data "aws_ssm_parameter" "deductions_core_vpc_id" {
+  name = "/repo/${var.environment}/output/prm-deductions-infra/deductions-core-vpc-id"
+}

@@ -9,12 +9,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
-import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import java.net.MalformedURLException;
@@ -23,7 +20,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -72,30 +68,6 @@ class EhrRepoClientTest {
         var actualResponse = ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         var expectedResponse = createExpectedSuccessfulEhrDeleteResponse();
         assertEquals(expectedResponse, actualResponse);
-    }
-
-    @Test
-    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns404Error() {
-        when(httpClient.delete(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
-        assertThrows(HttpClientErrorException.class, () -> {
-            ehrRepoService.deletePatientEhr(getReRegistrationEvent());
-        });
-        verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
-    }
-
-    @Test
-    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns400Error() {
-        when(httpClient.delete(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-        assertThrows(HttpClientErrorException.class, () -> {
-            ehrRepoService.deletePatientEhr(getReRegistrationEvent());
-        });
-        verify(reRegistrationAuditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(getReRegistrationEvent().getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
-    }
-
-    @Test
-    void shouldThrowAnIntermittentErrorExceptionWhenEhrResponseReturns5xxError() {
-        when(httpClient.delete(any(), any())).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
-        assertThrows(IntermittentErrorEhrRepoException.class, () -> ehrRepoService.deletePatientEhr(getReRegistrationEvent()));
     }
 
     private ReRegistrationEvent getReRegistrationEvent() {

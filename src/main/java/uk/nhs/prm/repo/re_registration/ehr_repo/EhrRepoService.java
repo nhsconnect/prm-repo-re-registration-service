@@ -3,18 +3,11 @@ package uk.nhs.prm.repo.re_registration.ehr_repo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
-import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
-
-import java.io.IOException;
-import java.net.http.HttpResponse;
 
 @Slf4j
 @Service
@@ -39,37 +32,13 @@ public class EhrRepoService {
         try {
             log.info("Making a DELETE EHR Request to ehr-repo");
             var ehrRepoResponse = httpClient.delete(url, ehrRepoAuthKey);
-
-            if (isDeleteRequestSuccessful(ehrRepoResponse)) {
-                return getParsedDeleteEhrResponseBody(ehrRepoResponse.getBody());
-            } else {
-                throw new RuntimeException();
-            }
-        } catch (HttpStatusCodeException e) {
-            handleErrorResponse(reRegistrationEvent, e);
-            throw e;
+            return getParsedDeleteEhrResponseBody(ehrRepoResponse.getBody());
         } catch (Exception e) {
-            log.error("Error during the performing ehr delete request.");
+            log.error("Error during the performing ehr delete request." + e.getMessage());
             throw e;
         }
     }
 
-    private void handleErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
-
-        if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
-            log.info("Encountered client error with status code : {}", e.getStatusCode());
-            auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
-                    "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
-        } else if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-            log.info("Encountered client error with status code : {}", e.getStatusCode());
-            auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(),
-                    "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
-        } else if (e.getStatusCode().is5xxServerError()) {
-            log.info("Encountered server error with status code : {}", e.getStatusCode());
-            throw new IntermittentErrorEhrRepoException("Encountered error when calling ehr-repo DELETE patient endpoint", e);
-        }
-
-    }
 
     private EhrDeleteResponseContent getParsedDeleteEhrResponseBody(String responseBody) {
         try {
@@ -79,10 +48,6 @@ public class EhrRepoService {
             log.error("Encountered Exception while trying to request patient DELETE ehr");
             throw new RuntimeException(e);
         }
-    }
-
-    private boolean isDeleteRequestSuccessful(ResponseEntity<String> response) {
-        return response.getStatusCode().is2xxSuccessful();
     }
 
     private String getPatientDeleteEhrUrl(String nhsNumber) {
