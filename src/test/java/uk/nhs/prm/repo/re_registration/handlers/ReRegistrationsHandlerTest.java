@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrDeleteResponseContent;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
@@ -16,6 +17,7 @@ import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPub
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
+import uk.nhs.prm.repo.re_registration.pds.IntermittentErrorPdsException;
 import uk.nhs.prm.repo.re_registration.pds.PdsAdaptorService;
 import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
 
@@ -48,7 +50,7 @@ class ReRegistrationsHandlerTest {
     @InjectMocks
     private ReRegistrationsHandler reRegistrationsHandler;
 
-    private ReRegistrationEvent reRegistrationEvent = createReRegistrationEvent();
+    private final ReRegistrationEvent reRegistrationEvent = createReRegistrationEvent();
 
     @BeforeEach
     void setUp() {
@@ -56,7 +58,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    public void shouldLogTheLengthOfMessageReceived() throws Exception {
+    public void shouldLogTheLengthOfMessageReceived() {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
         var testLogAppender = addTestLogAppender();
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -65,7 +67,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() throws Exception {
+    void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -73,16 +75,31 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldNotCallPdsAndSendMessageToAuditTopicWithCanSendDeleteEhrRequestIsFalse() throws Exception {
+    void shouldNotCallPdsAndSendMessageToAuditTopicWithCanSendDeleteEhrRequestIsFalse() {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verifyNoInteractions(pdsAdaptorService);
-        var auditMessage = new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
+        var auditMessage = new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
         verify(auditPublisher).sendMessage(auditMessage);
     }
 
     @Test
-    void shouldPublishToQueueWhenPatientIsSuspendedWithNoAction() throws Exception {
+    void shouldPublishStatusMessageOnAuditTopicWhenPDSAdaptorReturns4xxError() {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
+        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
+        verify(auditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
+    }
+
+    @Test
+    void shouldThrowAnIntermittentErrorPdsExceptionWhenPDSAdaptorReturns5xxError() {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+        assertThrows(IntermittentErrorPdsException.class, () -> reRegistrationsHandler.process(reRegistrationEvent.toJsonString()));
+    }
+
+    @Test
+    void shouldPublishToQueueWhenPatientIsSuspendedWithNoAction() {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(true));
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
@@ -90,7 +107,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldPublishToQueueWhenPatientIsNotSuspendedWithAction() throws Exception {
+    void shouldPublishToQueueWhenPatientIsNotSuspendedWithAction() {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenReturn(createSuccessfulEhrDeleteResponse());
@@ -106,7 +123,7 @@ class ReRegistrationsHandlerTest {
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND) {});
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
-        verify(auditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
+        verify(auditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
     }
 
     @Test
@@ -115,7 +132,7 @@ class ReRegistrationsHandlerTest {
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST) {});
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
-        verify(auditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
+        verify(auditPublisher, times(1)).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
     }
 
     @Test

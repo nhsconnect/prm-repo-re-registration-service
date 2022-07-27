@@ -13,8 +13,8 @@ import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPub
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
+import uk.nhs.prm.repo.re_registration.pds.IntermittentErrorPdsException;
 import uk.nhs.prm.repo.re_registration.pds.PdsAdaptorService;
-import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
 
 @Slf4j
 @Component
@@ -33,9 +33,11 @@ public class ReRegistrationsHandler {
         var reRegistrationEvent = parser.parse(payload);
 
         if (toggleConfig.canSendDeleteEhrRequest()) {
-            var parsedPdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
-            var isSuspended = checkSuspendedStatus(parsedPdsAdaptorResponse);
-            handlePdsResponse(reRegistrationEvent, isSuspended);
+            try {
+                checkSuspendedStatus(reRegistrationEvent);
+            } catch (Exception e) {
+                throw e;
+            }
         } else {
             log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
             sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
@@ -52,8 +54,26 @@ public class ReRegistrationsHandler {
         }
     }
 
-    private boolean checkSuspendedStatus(PdsAdaptorSuspensionStatusResponse pdsAdaptorResponse) {
-        return pdsAdaptorResponse.isSuspended();
+    private void checkSuspendedStatus(ReRegistrationEvent reRegistrationEvent) {
+        try {
+            var parsedPdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
+            handlePdsResponse(reRegistrationEvent, parsedPdsAdaptorResponse.isSuspended());
+        } catch (HttpStatusCodeException e) {
+            handlePdsErrorResponse(reRegistrationEvent, e);
+        }
+    }
+
+    private void handlePdsErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
+
+        if (e.getStatusCode().is4xxClientError()) {
+            log.info("Encountered client error with status code : {}", e.getStatusCode());
+            sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR");
+        } else if (e.getStatusCode().is5xxServerError()) {
+            log.info("Caught retryable exception: " + e.getMessage());
+            log.info("Encountered server error with status code : {}", e.getStatusCode());
+            throw new IntermittentErrorPdsException("Encountered error when calling pds get patient endpoint", e);
+        }
+
     }
 
     private void deleteEhr(ReRegistrationEvent reRegistrationEvent) {
@@ -63,11 +83,11 @@ public class ReRegistrationsHandler {
             ehrDeleteResponse = ehrRepoService.deletePatientEhr(reRegistrationEvent);
             sendAuditMessage(reRegistrationEvent, "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: " + ehrDeleteResponse.getConversationIds());
         }catch (HttpStatusCodeException e) {
-            handleErrorResponse(reRegistrationEvent, e);
+            handleEhrRepoErrorResponse(reRegistrationEvent, e);
         }
     }
 
-    private void handleErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
+    private void handleEhrRepoErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
 
         if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
             log.info("Encountered client error with status code : {}", e.getStatusCode());

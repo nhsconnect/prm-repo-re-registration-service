@@ -9,25 +9,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import uk.nhs.prm.repo.re_registration.http.HttpClient;
-import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
-import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.pds.model.PdsAdaptorSuspensionStatusResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PdsAdaptorServiceTest {
-    @Mock
-    ReRegistrationAuditPublisher reRegistrationAuditPublisher;
 
     @Mock
     HttpClient httpClient;
@@ -49,7 +42,7 @@ class PdsAdaptorServiceTest {
 
     @BeforeEach
     void init() {
-        pdsAdaptorService = new PdsAdaptorService(httpClient, reRegistrationAuditPublisher, pdsAdaptorServiceUrl, authUserName, authPassword);
+        pdsAdaptorService = new PdsAdaptorService(httpClient, pdsAdaptorServiceUrl, authUserName, authPassword);
     }
 
     @Test
@@ -76,19 +69,6 @@ class PdsAdaptorServiceTest {
         var actualResponse = pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent());
         var expectedResponse = new PdsAdaptorSuspensionStatusResponse("0000000000",true ,"currentOdsCode",null,"etag",false);
         assertEquals(expectedResponse, actualResponse);
-    }
-
-    @Test
-    void shouldPublishStatusMessageOnAuditTopicWhenPDSAdaptorReturns4xxError() {
-        when(httpClient.get(any(), any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
-        assertThrows(HttpClientErrorException.class, () -> pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent()));
-        verify(reRegistrationAuditPublisher).sendMessage(new NonSensitiveDataMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR"));
-    }
-
-    @Test
-    void shouldThrowAnIntermittentErrorPdsExceptionWhenPDSAdaptorReturns5xxError() {
-        when(httpClient.get(any(), any(), any())).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
-        assertThrows(IntermittentErrorPdsException.class, () -> pdsAdaptorService.getPatientPdsStatus(getReRegistrationEvent()));
     }
 
     private ResponseEntity<String> getPdsResponseStringWithSuspendedStatus(boolean isSuspended) {
