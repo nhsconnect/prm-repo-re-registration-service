@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.re_registration.ehr_repo;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,7 +55,7 @@ class EhrRepoClientTest {
     }
 
     @Test
-    void shouldCallHttpClientWithCorrectUriAndUserNAmeAndPassword() {
+    void shouldCallHttpClientWithCorrectUriAndUserNAmeAndPassword() throws JsonProcessingException {
         when(httpClient.delete(any(), any())).thenReturn(createDeleteEhrResponseJsonString());
         ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         verify(httpClient).delete(url.capture(), authKey.capture());
@@ -63,7 +64,7 @@ class EhrRepoClientTest {
     }
 
     @Test
-    void shouldReturnParsedEhrRepoResponseIfSuccessfulAndWhenEhrResponseReturns200Ok() {
+    void shouldReturnParsedEhrRepoResponseIfSuccessfulAndWhenEhrResponseReturns200Ok() throws JsonProcessingException {
         when(httpClient.delete(any(), any())).thenReturn(createDeleteEhrResponseJsonString());
         var actualResponse = ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         var expectedResponse = createExpectedSuccessfulEhrDeleteResponse();

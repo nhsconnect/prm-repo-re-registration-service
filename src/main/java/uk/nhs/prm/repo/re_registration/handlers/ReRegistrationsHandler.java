@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.re_registration.handlers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -33,11 +34,7 @@ public class ReRegistrationsHandler {
         var reRegistrationEvent = parser.parse(payload);
 
         if (toggleConfig.canSendDeleteEhrRequest()) {
-            try {
-                checkSuspendedStatus(reRegistrationEvent);
-            } catch (Exception e) {
-                throw e;
-            }
+            checkSuspendedStatus(reRegistrationEvent);
         } else {
             log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
             sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
@@ -79,11 +76,13 @@ public class ReRegistrationsHandler {
     private void deleteEhr(ReRegistrationEvent reRegistrationEvent) {
         log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
         EhrDeleteResponseContent ehrDeleteResponse;
-        try{
+        try {
             ehrDeleteResponse = ehrRepoService.deletePatientEhr(reRegistrationEvent);
             sendAuditMessage(reRegistrationEvent, "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: " + ehrDeleteResponse.getConversationIds());
-        }catch (HttpStatusCodeException e) {
+        } catch (HttpStatusCodeException e) {
             handleEhrRepoErrorResponse(reRegistrationEvent, e);
+        } catch (JsonProcessingException e) {
+            log.info("error during the mapping of delete response");
         }
     }
 

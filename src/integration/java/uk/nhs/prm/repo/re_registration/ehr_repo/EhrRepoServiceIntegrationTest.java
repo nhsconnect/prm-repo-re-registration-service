@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.re_registration.ehr_repo;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +58,7 @@ public class EhrRepoServiceIntegrationTest {
     }
 
     @Test
-    void shouldSendMessageWithActionOnAuditTopicWhenEhrRepoReturns200() {
+    void shouldSendMessageWithActionOnAuditTopicWhenEhrRepoReturns200() throws JsonProcessingException {
         ehrRepo200Response();
         var ehrResponse = ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         var conversationIds = ehrResponse.getConversationIds();

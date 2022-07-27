@@ -1,5 +1,6 @@
 package uk.nhs.prm.repo.re_registration.handlers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -107,7 +108,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldPublishToQueueWhenPatientIsNotSuspendedWithAction() {
+    void shouldPublishToQueueWhenPatientIsNotSuspendedWithAction() throws JsonProcessingException {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenReturn(createSuccessfulEhrDeleteResponse());
@@ -118,7 +119,7 @@ class ReRegistrationsHandlerTest {
 
 
     @Test
-    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns404Error() {
+    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns404Error() throws JsonProcessingException {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND) {});
@@ -127,7 +128,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns400Error() {
+    void shouldPublishStatusMessageOnAuditTopicWhenEhrResponseReturns400Error() throws JsonProcessingException {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST) {});
@@ -136,7 +137,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldThrowAnIntermittentErrorExceptionWhenEhrResponseReturns5xxError() {
+    void shouldThrowAnIntermittentErrorExceptionWhenEhrResponseReturns5xxError() throws JsonProcessingException {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR) {});
