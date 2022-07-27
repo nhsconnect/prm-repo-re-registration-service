@@ -12,11 +12,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import uk.nhs.prm.repo.re_registration.config.Tracer;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
-
-import java.io.IOException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,9 +32,6 @@ public class EhrRepoServiceIntegrationTest {
     private String authKey;
 
     private WireMockServer stubEhrRepo;
-
-    @Autowired
-    private Tracer tracer;
 
     public static final String NHS_NUMBER = "1234567890";
     private static final String NEMS_MESSAGE_ID = "nemsMessageId";
@@ -63,9 +57,8 @@ public class EhrRepoServiceIntegrationTest {
     }
 
     @Test
-    void shouldSendMessageWithActionOnAuditTopicWhenEhrRepoReturns200() throws IOException, InterruptedException {
+    void shouldSendMessageWithActionOnAuditTopicWhenEhrRepoReturns200() {
         ehrRepo200Response();
-        tracer.setTraceId("trace-id");
         var ehrResponse = ehrRepoService.deletePatientEhr(getReRegistrationEvent());
         var conversationIds = ehrResponse.getConversationIds();
 

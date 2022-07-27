@@ -1,7 +1,5 @@
 package uk.nhs.prm.repo.re_registration.http;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -9,50 +7,26 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import uk.nhs.prm.repo.re_registration.config.Tracer;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpResponse;
 import java.util.Arrays;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class HttpClient {
 
     public static final String AUTHORIZATION = "Authorization";
     private final RestTemplate restTemplate;
     private final Tracer tracer;
 
+    public HttpClient(RestTemplate restTemplate, Tracer tracer) {
+        this.restTemplate = restTemplate;
+        this.tracer = tracer;
+    }
+
     public ResponseEntity<String> get(String uri, String userName, String password) {
         return restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(getHeaders(userName, password)), String.class);
     }
 
-    public HttpResponse<String> delete(String uri, String authKey) throws IOException, InterruptedException {
-        URI ehrUri = URI.create(uri);
-        log.info("ehr-repo url: " + ehrUri.toURL());
-        java.net.http.HttpRequest request = null;
-        try {
-            request = java.net.http.HttpRequest.newBuilder()
-                    .uri(new URI(uri))
-                    .header("Authorization", authKey)
-                    .header("Content-Type", "application/json")
-                    .header("traceId", tracer.getTraceId())
-
-                    .DELETE().build();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-        HttpResponse response;
-        try {
-            response = java.net.http.HttpClient.newHttpClient()
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-            log.info("ehr response status code is: " + response.statusCode());
-        } catch (Exception e) {
-            log.error("Error occurred during ehr-repo delete call", e.getMessage());
-            throw e;
-        }
-        return response;
+    public ResponseEntity<String> delete(String uri, String authKey) {
+        return restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(getHeadersForEhrRepo(authKey)), String.class);
     }
 
     private HttpHeaders getHeadersForEhrRepo(String authKey) {

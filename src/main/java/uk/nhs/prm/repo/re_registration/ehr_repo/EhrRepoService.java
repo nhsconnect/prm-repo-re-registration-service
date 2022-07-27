@@ -23,7 +23,7 @@ public class EhrRepoService {
     private final String ehrRepoAuthKey;
     private final Tracer tracer;
     private final ReRegistrationAuditPublisher auditPublisher;
-    private final HttpClient httpClient;
+    private HttpClient httpClient;
 
     public EhrRepoService(@Value("${ehrRepoUrl}") String ehrRepoUrl, @Value("${ehrRepoAuthKey}") String ehrRepoAuthKey, Tracer tracer, ReRegistrationAuditPublisher auditPublisher, HttpClient httpClient) {
         this.ehrRepoUrl = ehrRepoUrl;
@@ -33,7 +33,7 @@ public class EhrRepoService {
         this.httpClient = httpClient;
     }
 
-    public EhrDeleteResponseContent deletePatientEhr(ReRegistrationEvent reRegistrationEvent) throws IOException, InterruptedException {
+    public EhrDeleteResponseContent deletePatientEhr(ReRegistrationEvent reRegistrationEvent) {
 
         var url = getPatientDeleteEhrUrl(reRegistrationEvent.getNhsNumber());
         try {
@@ -41,7 +41,7 @@ public class EhrRepoService {
             var ehrRepoResponse = httpClient.delete(url, ehrRepoAuthKey);
 
             if (isDeleteRequestSuccessful(ehrRepoResponse)) {
-                return getParsedDeleteEhrResponseBody(ehrRepoResponse.body());
+                return getParsedDeleteEhrResponseBody(ehrRepoResponse.getBody());
             } else {
                 throw new RuntimeException();
             }
@@ -81,9 +81,8 @@ public class EhrRepoService {
         }
     }
 
-    private boolean isDeleteRequestSuccessful(HttpResponse<String> response) {
-        log.info("response body: " + response.body());
-        return response.statusCode() == 200;
+    private boolean isDeleteRequestSuccessful(ResponseEntity<String> response) {
+        return response.getStatusCode().is2xxSuccessful();
     }
 
     private String getPatientDeleteEhrUrl(String nhsNumber) {

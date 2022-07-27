@@ -13,12 +13,13 @@ locals {
     { name = "PDS_ADAPTOR_AUTH_PASSWORD", value = data.aws_ssm_parameter.pds_adaptor_auth_password.value },
     { name = "RE_REGISTRATIONS_AUDIT_SNS_TOPIC_ARN", value = aws_sns_topic.re_registration_audit_topic.arn },
     { name = "CAN_SEND_DELETE_EHR_REQUEST", value = tostring(var.toggle_can_send_delete_ehr_request) },
-    { name  = "RE_REGISTRATION_SERVICE_EHR_REPO_URL", value = data.aws_ssm_parameter.pds_url.value },
+    { name  = "RE_REGISTRATION_SERVICE_EHR_REPO_URL", value = "https://ehr-repo.${var.environment_dns_zone}.patient-deductions.nhs.uk" },
     { name  = "RE_REGISTRATION_SERVICE_AUTHORIZATION_KEYS_FOR_EHR_REPO",
       value = data.aws_ssm_parameter.re_registration_service_authorization_keys_for_ehr_repo.value
     }
   ]
 }
+
 
 resource "aws_ecs_task_definition" "task" {
   family                   = var.component_name

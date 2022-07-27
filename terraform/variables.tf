@@ -36,3 +36,7 @@ variable "toggle_can_send_delete_ehr_request" {
   description = "Toggle to allow sending delete ehr request"
   default = false
 }
+
+variable "environment_dns_zone" {
+  description = "The environment-specific labels of the dns zone name, e.g. 'prod' or 'dev.non-prod'"
+}

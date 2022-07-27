@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import uk.nhs.prm.repo.re_registration.pds.IntermittentErrorPdsException;
 
-import java.io.IOException;
 import java.util.function.Function;
 
 @Slf4j
@@ -42,13 +41,7 @@ public class ReRegistrationsRetryHandler {
     }
 
     public Void processOnce(String payload) {
-        try {
-            reRegistrationsHandler.process(payload);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        reRegistrationsHandler.process(payload);
         return null;
     }
 
