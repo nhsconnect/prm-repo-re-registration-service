@@ -11,5 +11,4 @@ public class ReRegistrationServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ReRegistrationServiceApplication.class, args);
 	}
-
 }
