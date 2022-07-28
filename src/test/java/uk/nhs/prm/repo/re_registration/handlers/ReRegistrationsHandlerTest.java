@@ -137,7 +137,7 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
-    void shouldThrowAnIntermittentErrorExceptionWhenEhrResponseReturns5xxError() throws JsonProcessingException {
+    void shouldThrowAServerErrorExceptionWhenEhrResponseReturns5xxError() throws JsonProcessingException {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR) {});
