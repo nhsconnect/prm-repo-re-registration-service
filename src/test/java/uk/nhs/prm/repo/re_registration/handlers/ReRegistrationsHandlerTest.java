@@ -13,7 +13,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrDeleteResponseContent;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
-import uk.nhs.prm.repo.re_registration.ehr_repo.IntermittentErrorEhrRepoException;
+import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoServerException;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
@@ -141,7 +141,7 @@ class ReRegistrationsHandlerTest {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR) {});
-        assertThrows(IntermittentErrorEhrRepoException.class, () -> reRegistrationsHandler.process(reRegistrationEvent.toJsonString()));
+        assertThrows(EhrRepoServerException.class, () -> reRegistrationsHandler.process(reRegistrationEvent.toJsonString()));
     }
 
 
