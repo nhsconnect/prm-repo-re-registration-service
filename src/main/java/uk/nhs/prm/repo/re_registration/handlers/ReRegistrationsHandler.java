@@ -49,11 +49,12 @@ public class ReRegistrationsHandler {
                 sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED");
                 return;
             }
-            log.info("Patient is not suspended, going ahead invoking ehr repo to delete records");
-            deleteEhr(reRegistrationEvent);
         } catch (HttpStatusCodeException e) {
             handlePdsErrorResponse(reRegistrationEvent, e);
+            return;
         }
+        log.info("Patient is not suspended, going ahead invoking ehr repo to delete records");
+        deleteEhr(reRegistrationEvent);
     }
 
     private void handlePdsErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
