@@ -43,6 +43,22 @@ resource "aws_cloudwatch_log_metric_filter" "log_metric_filter" {
   }
 }
 
+resource "aws_cloudwatch_metric_alarm" "error_log_alarm" {
+  alarm_name          = "${var.environment}-${var.component_name}-error-logs"
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = "0"
+  evaluation_periods  = "1"
+  period              = "60"
+  metric_name         = local.error_logs_metric_name
+  namespace           = local.re_registration_service_metric_namespace
+  statistic           = "Sum"
+  alarm_description   = "This alarm monitors errors logs in ${var.component_name}"
+  treat_missing_data  = "notBreaching"
+  actions_enabled     = "true"
+  alarm_actions       = [data.aws_sns_topic.alarm_notifications.arn]
+  ok_actions          = [data.aws_sns_topic.alarm_notifications.arn]
+}
+
 resource "aws_cloudwatch_metric_alarm" "re_registrations_age_of_message" {
   alarm_name          = "${var.environment}-${var.component_name}-approx-age-of-oldest-message"
   comparison_operator = "GreaterThanThreshold"
