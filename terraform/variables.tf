@@ -40,3 +40,11 @@ variable "toggle_can_send_delete_ehr_request" {
 variable "environment_dns_zone" {
   description = "The environment-specific labels of the dns zone name, e.g. 'prod' or 'dev.non-prod'"
 }
+
+variable "period_of_age_of_message_metric" {
+  default = "1800"
+}
+
+variable "threshold_approx_age_oldest_message" {
+  default = "300"
+}
