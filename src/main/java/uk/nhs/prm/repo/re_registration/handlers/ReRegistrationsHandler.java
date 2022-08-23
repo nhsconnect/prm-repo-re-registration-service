@@ -10,7 +10,8 @@ import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoServerException;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
-import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
+import uk.nhs.prm.repo.re_registration.model.AuditMessage;
+import uk.nhs.prm.repo.re_registration.model.DeleteAuditMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 import uk.nhs.prm.repo.re_registration.pds.IntermittentErrorPdsException;
@@ -71,7 +72,8 @@ public class ReRegistrationsHandler {
     private void deleteEhr(ReRegistrationEvent reRegistrationEvent) {
         try {
             var ehrDeleteResponse = ehrRepoService.deletePatientEhr(reRegistrationEvent);
-            sendAuditMessage(reRegistrationEvent, "ACTION:RE_REGISTRATION_EHR_DELETED with conversationIds: " + ehrDeleteResponse.getConversationIds());
+            var deleteAuditMessage = new DeleteAuditMessage(reRegistrationEvent.getNemsMessageId(), ehrDeleteResponse.getConversationIds());
+            auditPublisher.sendMessage(deleteAuditMessage);
         } catch (HttpStatusCodeException e) {
             handleEhrRepoErrorResponse(reRegistrationEvent, e);
         } catch (JsonProcessingException e) {
@@ -82,10 +84,10 @@ public class ReRegistrationsHandler {
     private void handleEhrRepoErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
         if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
             log.info("Encountered client error with status code : {}", e.getStatusCode());
-            auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
+            auditPublisher.sendMessage(new AuditMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
         } else if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
             log.info("Encountered client error with status code : {}", e.getStatusCode());
-            auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
+            auditPublisher.sendMessage(new AuditMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
         } else if (e.getStatusCode().is5xxServerError()) {
             log.info("Encountered server error with status code : {}", e.getStatusCode());
             throw new EhrRepoServerException("Encountered error when calling ehr-repo DELETE patient endpoint", e);
@@ -93,6 +95,6 @@ public class ReRegistrationsHandler {
     }
 
     private void sendAuditMessage(ReRegistrationEvent reRegistrationEvent, String status) {
-        auditPublisher.sendMessage(new NonSensitiveDataMessage(reRegistrationEvent.getNemsMessageId(), status));
+        auditPublisher.sendMessage(new AuditMessage(reRegistrationEvent.getNemsMessageId(), status));
     }
 }

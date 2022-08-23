@@ -1,15 +1,14 @@
 package uk.nhs.prm.repo.re_registration.model;
 
 import com.google.gson.GsonBuilder;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 
 @AllArgsConstructor
 @Data
-public class NonSensitiveDataMessage {
+public class AuditMessage {
 
-    private final String nemsMessageId;
-    private final String status;
+    private String nemsMessageId;
+    private String status;
 
     public String toJsonString() {
         return new GsonBuilder().disableHtmlEscaping().create()

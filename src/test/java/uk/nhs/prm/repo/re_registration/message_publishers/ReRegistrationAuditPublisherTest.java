@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
+import uk.nhs.prm.repo.re_registration.model.AuditMessage;
 
 import static org.mockito.Mockito.verify;
 
@@ -26,7 +26,7 @@ class ReRegistrationAuditPublisherTest {
 
     @Test
     void shouldSendMessageToRegistrationAuditTopic(){
-        reRegistrationAuditPublisher.sendMessage(new NonSensitiveDataMessage("nemsMessageId","status"));
+        reRegistrationAuditPublisher.sendMessage(new AuditMessage("nemsMessageId","status"));
         verify(messagePublisher).sendMessage(reRegistrationTopicArn,"{\"nemsMessageId\":\"nemsMessageId\",\"status\":\"status\"}");
     }
 }

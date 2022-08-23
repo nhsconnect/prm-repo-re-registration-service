@@ -2,7 +2,7 @@ package uk.nhs.prm.repo.re_registration.message_publishers;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import uk.nhs.prm.repo.re_registration.model.NonSensitiveDataMessage;
+import uk.nhs.prm.repo.re_registration.model.AuditMessage;
 
 @Component
 public class ReRegistrationAuditPublisher {
@@ -15,7 +15,7 @@ public class ReRegistrationAuditPublisher {
         this.reRegistrationAuditTopicArn = reRegistrationAuditTopicArn;
     }
 
-    public void sendMessage(NonSensitiveDataMessage message) {
+    public void sendMessage(AuditMessage message) {
         messagePublisher.sendMessage(reRegistrationAuditTopicArn, message.toJsonString());
     }
 }
