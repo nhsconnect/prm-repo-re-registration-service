@@ -241,6 +241,36 @@ data "aws_iam_policy_document" "re_registrations_sns_topic_access_to_queue" {
   }
 }
 
+resource "aws_sqs_queue_policy" "active_suspensions_queue_policy" {
+  queue_url = aws_sqs_queue.active_suspensions.id
+  policy    = data.aws_iam_policy_document.active_suspensions_sns_topic_access_to_queue.json
+}
+
+data "aws_iam_policy_document" "active_suspensions_sns_topic_access_to_queue" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage"
+    ]
+
+    principals {
+      identifiers = ["sns.amazonaws.com"]
+      type        = "Service"
+    }
+
+    resources = [
+      aws_sqs_queue.active_suspensions.arn
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      values   = [data.aws_ssm_parameter.active_suspensions_topic_arn.value]
+      variable = "aws:SourceArn"
+    }
+  }
+}
+
 resource "aws_iam_role_policy_attachment" "re_registrations_processor_sqs" {
   role       = aws_iam_role.component-ecs-role.name
   policy_arn = aws_iam_policy.re_registrations_processor_sqs.arn
@@ -260,7 +290,8 @@ data "aws_iam_policy_document" "sqs_re_registrations_ecs_task" {
       "sqs:ReceiveMessage"
     ]
     resources = [
-      aws_sqs_queue.re_registrations.arn
+      aws_sqs_queue.re_registrations.arn,
+      aws_sqs_queue.active_suspensions.arn
     ]
   }
 }

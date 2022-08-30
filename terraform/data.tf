@@ -51,3 +51,11 @@ data "aws_vpc" "deductions-core" {
 data "aws_ssm_parameter" "deductions_core_vpc_id" {
   name = "/repo/${var.environment}/output/prm-deductions-infra/deductions-core-vpc-id"
 }
+
+data "aws_ssm_parameter" "active_suspensions_kms_key_id" {
+  name = "/repo/${var.environment}/output/suspension-service/active-suspensions-kms-key-id"
+}
+
+data "aws_ssm_parameter" "active_suspensions_topic_arn" {
+  name = "/repo/${var.environment}/output/suspension-service/active-suspensions-topic-arn"
+}
