@@ -56,6 +56,10 @@ data "aws_ssm_parameter" "active_suspensions_kms_key_id" {
   name = "/repo/${var.environment}/output/suspension-service/active-suspensions-kms-key-id"
 }
 
-data "aws_ssm_parameter" "active_suspensions_topic_arn" {
+data "aws_ssm_parameter" "suspension_active_suspensions_topic_arn" {
   name = "/repo/${var.environment}/output/suspension-service/active-suspensions-topic-arn"
+}
+
+data "aws_ssm_parameter" "end_of_transfer_active_suspensions_topic_arn" {
+  name = "/repo/${var.environment}/output/end-of-transfer-service/active-suspensions-topic-arn"
 }

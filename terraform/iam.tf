@@ -265,7 +265,10 @@ data "aws_iam_policy_document" "active_suspensions_sns_topic_access_to_queue" {
 
     condition {
       test     = "ArnEquals"
-      values   = [data.aws_ssm_parameter.active_suspensions_topic_arn.value]
+      values   = [
+        data.aws_ssm_parameter.suspension_active_suspensions_topic_arn.value,
+        data.aws_ssm_parameter.end_of_transfer_active_suspensions_topic_arn.value
+      ]
       variable = "aws:SourceArn"
     }
   }
