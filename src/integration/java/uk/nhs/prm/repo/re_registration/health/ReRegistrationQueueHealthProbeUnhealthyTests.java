@@ -27,7 +27,7 @@ class ReRegistrationQueueHealthProbeUnhealthyTests {
 
     @Test
     void shouldReturnNotHealthyWhenTheProbeCannotAccessTheQueue() {
-        var appConfig = new AppConfig("int-test", "non-existent-queue");
+        var appConfig = new AppConfig("int-test", "non-existent-queue", "non-existent-queue");
         var probe = new ReRegistrationsQueueHealthProbe(appConfig, sqsClient);
 
         assertFalse(probe.isHealthy());

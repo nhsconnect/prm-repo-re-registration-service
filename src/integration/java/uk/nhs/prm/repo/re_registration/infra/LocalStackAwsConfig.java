@@ -36,6 +36,9 @@ public class LocalStackAwsConfig {
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
 
+    @Value("${aws.activeSuspensionsQueueName}")
+    private String activeSuspensionsQueueName;
+
     @Autowired
     private SnsClient snsClient;
 
@@ -94,7 +97,9 @@ public class LocalStackAwsConfig {
 
     private void recreateReRegistrationsQueue() {
         ensureQueueDeleted(reRegistrationsQueueName);
+        ensureQueueDeleted(activeSuspensionsQueueName);
         createQueue(reRegistrationsQueueName);
+        createQueue(activeSuspensionsQueueName);
     }
 
     private void createQueue(String queueName) {

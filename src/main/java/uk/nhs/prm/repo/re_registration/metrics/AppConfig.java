@@ -10,10 +10,12 @@ public class AppConfig {
 
     private final String environment;
     private final String reRegistrationsQueueName;
+    private final String activeSuspensionsQueueName;
 
-    public AppConfig(@Value("${environment}") String environment, @Value("${aws.reRegistrationsQueueName}") String reRegistrationsQueueName) {
+    public AppConfig(@Value("${environment}") String environment, @Value("${aws.reRegistrationsQueueName}") String reRegistrationsQueueName, @Value("${aws.activeSuspensionsQueueName}") String activeSuspensionsQueueName) {
         this.environment = environment;
         this.reRegistrationsQueueName = reRegistrationsQueueName;
+        this.activeSuspensionsQueueName = activeSuspensionsQueueName;
     }
 
     public String environment() {
@@ -22,6 +24,10 @@ public class AppConfig {
 
     public String reRegistrationsQueueName() {
         return reRegistrationsQueueName;
+    }
+
+    public String activeSuspensionsQueueName() {
+        return activeSuspensionsQueueName;
     }
 
     @Bean
