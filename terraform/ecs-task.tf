@@ -8,7 +8,6 @@ locals {
     { name = "AWS_REGION", value = var.region },
     { name = "LOG_LEVEL", value = var.log_level },
     { name = "RE_REGISTRATIONS_QUEUE_NAME", value = aws_sqs_queue.re_registrations.name },
-    { name = "ACTIVE_SUSPENSIONS_QUEUE_NAME", value = aws_sqs_queue.active_suspensions.name },
     { name = "RE_REGISTRATIONS_AUDIT_QUEUE_NAME", value = aws_sqs_queue.re_registration_audit_uploader.name },
     { name = "PDS_ADAPTOR_SERVICE_URL", value = data.aws_ssm_parameter.pds_adaptor_service_url.value },
     { name = "PDS_ADAPTOR_AUTH_PASSWORD", value = data.aws_ssm_parameter.pds_adaptor_auth_password.value },
