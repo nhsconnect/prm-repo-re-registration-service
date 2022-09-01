@@ -16,6 +16,16 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
+import software.amazon.awssdk.services.dynamodb.model.KeyType;
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
+import software.amazon.awssdk.services.dynamodb.waiters.DynamoDbWaiter;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.CreateTopicRequest;
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse;
@@ -25,6 +35,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +61,12 @@ public class LocalStackAwsConfig {
 
     @Autowired
     private AmazonSQSAsync amazonSQSAsync;
+
+    @Autowired
+    private DynamoDbClient dynamoDbClient;
+
+    @Value("${aws.activeSuspensionsDetailsDynamoDbTableName}")
+    private String activeSuspensionsDetailsDynamoDbTableName;
 
     @Bean
     public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
@@ -86,6 +103,26 @@ public class LocalStackAwsConfig {
                 .build();
     }
 
+    @Bean
+    public static DynamoDbClient dynamoDbClient(@Value("${localstack.url}") String localstackUrl) {
+        return DynamoDbClient.builder()
+                .endpointOverride(URI.create(localstackUrl))
+                .region(Region.EU_WEST_2)
+                .credentialsProvider(
+                        StaticCredentialsProvider.create(new AwsCredentials() {
+                            @Override
+                            public String accessKeyId() {
+                                return "FAKE";
+                            }
+
+                            @Override
+                            public String secretAccessKey() {
+                                return "FAKE";
+                            }
+                        }))
+                .build();
+    }
+
     @PostConstruct
     public void setupTestQueuesAndTopics() {
         recreateReRegistrationsQueue();
@@ -93,6 +130,50 @@ public class LocalStackAwsConfig {
         var topic = snsClient.createTopic(CreateTopicRequest.builder().name("re_registration_audit_sns_topic").build());
 
         createSnsTestReceiverSubscription(topic, getQueueArn(reRegistrationsAuditQueue.getQueueUrl()));
+    }
+
+    private void setupDbAndTable() {
+
+        var waiter = dynamoDbClient.waiter();
+        var tableRequest = DescribeTableRequest.builder()
+                .tableName(activeSuspensionsDetailsDynamoDbTableName)
+                .build();
+
+        if (dynamoDbClient.listTables().tableNames().contains(activeSuspensionsDetailsDynamoDbTableName)) {
+            resetTableForLocalEnvironment(waiter, tableRequest);
+        }
+
+
+        List<KeySchemaElement> keySchema = new ArrayList<>();
+        keySchema.add(KeySchemaElement.builder()
+                .keyType(KeyType.HASH)
+                .attributeName("nhs_number")
+                .build());
+
+        List<AttributeDefinition> attributeDefinitions = new ArrayList<AttributeDefinition>();
+        attributeDefinitions.add(AttributeDefinition.builder()
+                .attributeType(ScalarAttributeType.S)
+                .attributeName("nhs_number")
+                .build());
+
+        var createTableRequest = CreateTableRequest.builder()
+                .tableName(activeSuspensionsDetailsDynamoDbTableName)
+                .keySchema(keySchema)
+                .attributeDefinitions(attributeDefinitions)
+                .provisionedThroughput(ProvisionedThroughput.builder()
+                        .readCapacityUnits(5L)
+                        .writeCapacityUnits(5L)
+                        .build())
+                .build();
+
+        dynamoDbClient.createTable(createTableRequest);
+        waiter.waitUntilTableExists(tableRequest);
+    }
+
+    private void resetTableForLocalEnvironment(DynamoDbWaiter waiter, DescribeTableRequest tableRequest) {
+        var deleteRequest = DeleteTableRequest.builder().tableName(activeSuspensionsDetailsDynamoDbTableName).build();
+        dynamoDbClient.deleteTable(deleteRequest);
+        waiter.waitUntilTableNotExists(tableRequest);
     }
 
     private void recreateReRegistrationsQueue() {
