@@ -67,7 +67,7 @@ public class SqsListenerSpringConfiguration {
 
         log.info("active suspensions queue name : {}", activeSuspensionsQueueName);
         var activeSuspensionsConsumer = session.createConsumer(session.createQueue(activeSuspensionsQueueName));
-        activeSuspensionsConsumer.setMessageListener(new ActiveSuspensionsMessageListener(tracer, activeSuspensionsHandler));
+        activeSuspensionsConsumer.setMessageListener(new ActiveSuspensionsMessageListener(tracer, activeSuspensionsHandler, activeSuspensionsParser));
 
         connection.start();
 
