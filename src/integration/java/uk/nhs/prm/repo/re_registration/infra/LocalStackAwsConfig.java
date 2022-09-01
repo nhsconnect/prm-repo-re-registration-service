@@ -124,12 +124,14 @@ public class LocalStackAwsConfig {
     }
 
     @PostConstruct
-    public void setupTestQueuesAndTopics() {
+    public void setupTestQueuesTopicsAndDb() {
         recreateReRegistrationsQueue();
         var reRegistrationsAuditQueue = amazonSQSAsync.createQueue(reRegistrationsAuditQueueName);
         var topic = snsClient.createTopic(CreateTopicRequest.builder().name("re_registration_audit_sns_topic").build());
 
         createSnsTestReceiverSubscription(topic, getQueueArn(reRegistrationsAuditQueue.getQueueUrl()));
+
+        setupDbAndTable();
     }
 
     private void setupDbAndTable() {
