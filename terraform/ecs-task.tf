@@ -17,7 +17,8 @@ locals {
     { name  = "RE_REGISTRATION_SERVICE_EHR_REPO_URL", value = "https://ehr-repo.${var.environment_dns_zone}.patient-deductions.nhs.uk" },
     { name  = "RE_REGISTRATION_SERVICE_AUTHORIZATION_KEYS_FOR_EHR_REPO",
       value = data.aws_ssm_parameter.re_registration_service_authorization_keys_for_ehr_repo.value
-    }
+    },
+    { name = "ACTIVE_SUSPENSIONS_DETAILS_DYNAMODB_TABLE_NAME", value = aws_dynamodb_table.active_suspensions_details.name }
   ]
 }
 
@@ -70,6 +71,14 @@ resource "aws_security_group" "ecs-tasks-sg" {
     prefix_list_ids = [data.aws_ssm_parameter.s3_prefix_list_id.value]
   }
 
+  egress {
+    description     = "Allow outbound HTTPS traffic to dynamodb"
+    protocol        = "tcp"
+    from_port       = 443
+    to_port         = 443
+    prefix_list_ids = [data.aws_ssm_parameter.dynamodb_prefix_list_id.value]
+  }
+
   tags = {
     Name        = "${var.environment}-${var.component_name}-ecs-tasks-sg"
     CreatedBy   = var.repo_name
@@ -100,4 +109,8 @@ resource "aws_ssm_parameter" "ecs_task_security_group" {
 
 data "aws_ssm_parameter" "s3_prefix_list_id" {
   name = "/repo/${var.environment}/output/prm-deductions-infra/s3_prefix_list_id"
+}
+
+data "aws_ssm_parameter" "dynamodb_prefix_list_id" {
+  name = "/repo/${var.environment}/output/prm-deductions-infra/dynamodb_prefix_list_id"
 }

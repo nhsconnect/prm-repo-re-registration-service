@@ -1,6 +1,6 @@
 resource "aws_kms_key" "re_registration_audit" {
   description = "Custom KMS Key to enable server side encryption for SNS and SQS"
-  policy      = data.aws_iam_policy_document.re_registration_audit_kms_key_policy_doc.json
+  policy      = data.aws_iam_policy_document.kms_key_policy_doc.json
   enable_key_rotation = true
 
   tags = {
@@ -15,7 +15,24 @@ resource "aws_kms_alias" "re_registration_audit" {
   target_key_id = aws_kms_key.re_registration_audit.id
 }
 
-data "aws_iam_policy_document" "re_registration_audit_kms_key_policy_doc" {
+resource "aws_kms_key" "active_suspensions_details_dynamodb_kms_key" {
+  description = "Custom KMS Key to enable server side encryption for active-suspensions DB"
+  policy      = data.aws_iam_policy_document.kms_key_policy_doc.json
+  enable_key_rotation = true
+
+  tags = {
+    Name        = "${var.environment}-${var.component_name}-active-suspensions-details-dynamodb-kms-key"
+    CreatedBy   = var.repo_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_kms_alias" "active_suspensions_details_dynamodb_encryption" {
+  name          = "alias/${var.component_name}-active-suspensions-details-dynamodb-encryption-kms-key"
+  target_key_id = aws_kms_key.active_suspensions_details_dynamodb_kms_key.id
+}
+
+data "aws_iam_policy_document" "kms_key_policy_doc" {
   statement {
     effect = "Allow"
 
