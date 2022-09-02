@@ -32,20 +32,20 @@ public class ActiveSuspensionsIntegrationTest {
     @Value("${aws.activeSuspensionsQueueName}")
     private String activeSuspensionsQueueName;
 
-    private final String nhsNumber = "0987654321";
-    private final String previousOdsCode = "TEST00";
-    private final String nemsLastUpdatedDate = "2022-09-01T15:00:33+00:00";
+    private static final String NHS_NUMBER = "0987654321";
+    private static final String PREVIOUS_ODS_CODE = "TEST00";
+    private static final String NEMS_LAST_UPDATED_DATE = "2022-09-01T15:00:33+00:00";
 
     @Test
     void shouldSaveMessageFromActiveSuspensionsQueueInDb() {
         sendMessage(activeSuspensionsQueueName, getActiveSuspensionsMessage());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            var activeSuspensionsData = activeSuspensionsDetailsDb.getByNhsNumber(nhsNumber);
+            var activeSuspensionsData = activeSuspensionsDetailsDb.getByNhsNumber(NHS_NUMBER);
 
-            assertThat(activeSuspensionsData.getNhsNumber()).isEqualTo(nhsNumber);
-            assertThat(activeSuspensionsData.getPreviousOdsCode()).isEqualTo(previousOdsCode);
-            assertThat(activeSuspensionsData.getNemsLastUpdatedDate()).isEqualTo(nemsLastUpdatedDate);
+            assertThat(activeSuspensionsData.getNhsNumber()).isEqualTo(NHS_NUMBER);
+            assertThat(activeSuspensionsData.getPreviousOdsCode()).isEqualTo(PREVIOUS_ODS_CODE);
+            assertThat(activeSuspensionsData.getNemsLastUpdatedDate()).isEqualTo(NEMS_LAST_UPDATED_DATE);
         });
 
     }
@@ -56,7 +56,7 @@ public class ActiveSuspensionsIntegrationTest {
     }
 
     private String getActiveSuspensionsMessage() {
-        return new ActiveSuspensionsMessage(nhsNumber, previousOdsCode, nemsLastUpdatedDate).toJsonString();
+        return new ActiveSuspensionsMessage(NHS_NUMBER, PREVIOUS_ODS_CODE, NEMS_LAST_UPDATED_DATE).toJsonString();
     }
 
 }
