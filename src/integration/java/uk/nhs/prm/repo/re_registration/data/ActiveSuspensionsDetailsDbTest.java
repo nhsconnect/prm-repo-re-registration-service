@@ -1,6 +1,5 @@
 package uk.nhs.prm.repo.re_registration.data;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest()
 @ContextConfiguration(classes = { LocalStackAwsConfig.class})
 @DirtiesContext
-@Disabled("Disabling to test error handling for active-suspension-details db.")
 class ActiveSuspensionsDetailsDbTest {
 
     @Autowired
