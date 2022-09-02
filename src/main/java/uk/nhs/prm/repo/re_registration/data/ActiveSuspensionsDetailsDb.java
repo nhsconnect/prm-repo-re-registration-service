@@ -37,7 +37,7 @@ public class ActiveSuspensionsDetailsDb {
         log.info("Trying to save active suspensions message in db.");
 
         Map<String, AttributeValue> item = new HashMap<>();
-        item.put("nhs_number", AttributeValue.builder().s(activeSuspensionMessage.getNhsNumber()).build());
+        //item.put("nhs_number", AttributeValue.builder().s(activeSuspensionMessage.getNhsNumber()).build());
         item.put("previous_ods_code", AttributeValue.builder().s(activeSuspensionMessage.getPreviousOdsCode()).build());
         item.put("nems_last_updated_date", AttributeValue.builder().s(activeSuspensionMessage.getNemsLastUpdatedDate()).build());
 
