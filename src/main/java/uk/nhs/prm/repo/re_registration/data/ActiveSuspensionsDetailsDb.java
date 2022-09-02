@@ -1,6 +1,7 @@
 package uk.nhs.prm.repo.re_registration.data;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -13,6 +14,7 @@ import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ActiveSuspensionsDetailsDb {
@@ -31,6 +33,9 @@ public class ActiveSuspensionsDetailsDb {
     }
 
     public void save(ActiveSuspensionsMessage activeSuspensionMessage) {
+
+        log.info("Trying to save active suspensions message in db.");
+
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("nhs_number", AttributeValue.builder().s(activeSuspensionMessage.getNhsNumber()).build());
         item.put("previous_ods_code", AttributeValue.builder().s(activeSuspensionMessage.getPreviousOdsCode()).build());
