@@ -40,7 +40,7 @@ public class ActiveSuspensionsIntegrationTest {
     void shouldSaveMessageFromActiveSuspensionsQueueInDb() {
         sendMessage(activeSuspensionsQueueName, getActiveSuspensionsMessage());
 
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(20, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
             var activeSuspensionsData = activeSuspensionsDetailsDb.getByNhsNumber(NHS_NUMBER);
 
             assertThat(activeSuspensionsData.getNhsNumber()).isEqualTo(NHS_NUMBER);
