@@ -68,6 +68,7 @@ public class PdsAdaptorServiceIntegrationTest {
         stubPdsAdaptor.resetAll();
         stubPdsAdaptor.stop();
         sqs.purgeQueue(new PurgeQueueRequest(reRegistrationsAuditUrl));
+        sqs.purgeQueue(new PurgeQueueRequest(reRegistrationsQueueUrl));
     }
 
     private WireMockServer initializeWebServer() {
