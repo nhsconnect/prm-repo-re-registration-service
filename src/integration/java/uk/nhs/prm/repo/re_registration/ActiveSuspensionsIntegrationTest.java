@@ -1,6 +1,7 @@
 package uk.nhs.prm.repo.re_registration;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import static org.awaitility.Awaitility.await;
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = LocalStackAwsConfig.class)
+@Disabled("Disabling to test pipeline behaviour.")
 public class ActiveSuspensionsIntegrationTest {
     @Autowired
     private AmazonSQSAsync amazonSQSAsync;
