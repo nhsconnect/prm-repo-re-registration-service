@@ -18,7 +18,7 @@ locals {
     { name  = "RE_REGISTRATION_SERVICE_AUTHORIZATION_KEYS_FOR_EHR_REPO",
       value = data.aws_ssm_parameter.re_registration_service_authorization_keys_for_ehr_repo.value
     },
-    { name = "ACTIVE_SUSPENSIONS_DETAILS_DYNAMODB_TABLE_NAME", value = aws_dynamodb_table.active_suspensions_details.name }
+    { name = "ACTIVE_SUSPENSIONS_DETAILS_DYNAMODB_TABLE_NAME", value = aws_dynamodb_table.active_suspensions.name }
   ]
 }
 

@@ -321,7 +321,7 @@ data "aws_iam_policy_document" "kms_policy_doc" {
 }
 
 resource "aws_iam_policy" "dynamodb-table-access" {
-  name   = "${var.environment}-${var.component_name}-active-suspensions-details-dynamodb-table-access"
+  name   = "${var.environment}-${var.component_name}-active-suspensions-dynamodb-table-access"
   policy = data.aws_iam_policy_document.dynamodb-table-access.json
 }
 
@@ -332,7 +332,7 @@ data "aws_iam_policy_document" "dynamodb-table-access" {
       "dynamodb:PutItem"
     ]
     resources = [
-      "arn:aws:dynamodb:${var.region}:${data.aws_caller_identity.current.account_id}:table/${aws_dynamodb_table.active_suspensions_details.name}"
+      "arn:aws:dynamodb:${var.region}:${data.aws_caller_identity.current.account_id}:table/${aws_dynamodb_table.active_suspensions.name}"
     ]
   }
 }
