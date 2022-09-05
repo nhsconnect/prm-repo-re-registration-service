@@ -65,8 +65,8 @@ public class LocalStackAwsConfig {
     @Autowired
     private DynamoDbClient dynamoDbClient;
 
-    @Value("${aws.activeSuspensionsDetailsDynamoDbTableName}")
-    private String activeSuspensionsDetailsDynamoDbTableName;
+    @Value("${aws.activeSuspensionsDynamoDbTableName}")
+    private String activeSuspensionsDynamoDbTableName;
 
     @Bean
     public static SqsClient sqsClient(@Value("${localstack.url}") String localstackUrl) throws URISyntaxException {
@@ -138,10 +138,10 @@ public class LocalStackAwsConfig {
 
         var waiter = dynamoDbClient.waiter();
         var tableRequest = DescribeTableRequest.builder()
-                .tableName(activeSuspensionsDetailsDynamoDbTableName)
+                .tableName(activeSuspensionsDynamoDbTableName)
                 .build();
 
-        if (dynamoDbClient.listTables().tableNames().contains(activeSuspensionsDetailsDynamoDbTableName)) {
+        if (dynamoDbClient.listTables().tableNames().contains(activeSuspensionsDynamoDbTableName)) {
             resetTableForLocalEnvironment(waiter, tableRequest);
         }
 
@@ -159,7 +159,7 @@ public class LocalStackAwsConfig {
                 .build());
 
         var createTableRequest = CreateTableRequest.builder()
-                .tableName(activeSuspensionsDetailsDynamoDbTableName)
+                .tableName(activeSuspensionsDynamoDbTableName)
                 .keySchema(keySchema)
                 .attributeDefinitions(attributeDefinitions)
                 .provisionedThroughput(ProvisionedThroughput.builder()
@@ -173,7 +173,7 @@ public class LocalStackAwsConfig {
     }
 
     private void resetTableForLocalEnvironment(DynamoDbWaiter waiter, DescribeTableRequest tableRequest) {
-        var deleteRequest = DeleteTableRequest.builder().tableName(activeSuspensionsDetailsDynamoDbTableName).build();
+        var deleteRequest = DeleteTableRequest.builder().tableName(activeSuspensionsDynamoDbTableName).build();
         dynamoDbClient.deleteTable(deleteRequest);
         waiter.waitUntilTableNotExists(tableRequest);
     }

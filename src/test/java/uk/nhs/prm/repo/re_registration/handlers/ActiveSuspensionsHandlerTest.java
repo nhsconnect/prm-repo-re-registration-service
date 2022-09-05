@@ -5,7 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDetailsDb;
+import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 
 import static org.mockito.Mockito.verify;
@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 class ActiveSuspensionsHandlerTest {
 
     @Mock
-    private ActiveSuspensionsDetailsDb activeSuspensionsDetailsDb;
+    private ActiveSuspensionsDb activeSuspensionsDb;
 
     @InjectMocks
     private ActiveSuspensionsHandler activeSuspensionsHandler;
@@ -23,7 +23,7 @@ class ActiveSuspensionsHandlerTest {
     void shouldCallDbWithActiveSuspensionsMessage() {
         var activeSuspensionMessage = getActiveSuspensionsMessage();
         activeSuspensionsHandler.handle(activeSuspensionMessage);
-        verify(activeSuspensionsDetailsDb).save(activeSuspensionMessage);
+        verify(activeSuspensionsDb).save(activeSuspensionMessage);
     }
 
     private ActiveSuspensionsMessage getActiveSuspensionsMessage() {

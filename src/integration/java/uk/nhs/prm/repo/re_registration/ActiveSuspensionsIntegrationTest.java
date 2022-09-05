@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDetailsDb;
+import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 
@@ -27,7 +27,7 @@ public class ActiveSuspensionsIntegrationTest {
     private AmazonSQSAsync amazonSQSAsync;
 
     @Autowired
-    ActiveSuspensionsDetailsDb activeSuspensionsDetailsDb;
+    ActiveSuspensionsDb activeSuspensionsDb;
 
     @Value("${aws.activeSuspensionsQueueName}")
     private String activeSuspensionsQueueName;
@@ -41,7 +41,7 @@ public class ActiveSuspensionsIntegrationTest {
         sendMessage(activeSuspensionsQueueName, getActiveSuspensionsMessage());
 
         await().atMost(20, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
-            var activeSuspensionsData = activeSuspensionsDetailsDb.getByNhsNumber(NHS_NUMBER);
+            var activeSuspensionsData = activeSuspensionsDb.getByNhsNumber(NHS_NUMBER);
 
             assertThat(activeSuspensionsData.getNhsNumber()).isEqualTo(NHS_NUMBER);
             assertThat(activeSuspensionsData.getPreviousOdsCode()).isEqualTo(PREVIOUS_ODS_CODE);

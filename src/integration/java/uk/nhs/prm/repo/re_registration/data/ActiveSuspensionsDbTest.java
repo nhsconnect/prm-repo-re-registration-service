@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest()
 @ContextConfiguration(classes = { LocalStackAwsConfig.class})
 @DirtiesContext
-class ActiveSuspensionsDetailsDbTest {
+class ActiveSuspensionsDbTest {
 
     @Autowired
-    ActiveSuspensionsDetailsDb activeSuspensionsDetailsDb;
+    ActiveSuspensionsDb activeSuspensionsDb;
 
     private String nhsNumber = "0987654321";
     private String previousOdsCode = "TEST00";
@@ -30,18 +30,18 @@ class ActiveSuspensionsDetailsDbTest {
 
     @Test
     void shouldSaveAndRetrieveActiveSuspensionFromDb() {
-        activeSuspensionsDetailsDb.save(getActiveSuspensionMessage());
+        activeSuspensionsDb.save(getActiveSuspensionMessage());
 
-        var activeSuspensionsDetails = activeSuspensionsDetailsDb.getByNhsNumber(nhsNumber);
-        assertThat(activeSuspensionsDetails.getNhsNumber()).isEqualTo(nhsNumber);
-        assertThat(activeSuspensionsDetails.getPreviousOdsCode()).isEqualTo(previousOdsCode);
-        assertThat(activeSuspensionsDetails.getNemsLastUpdatedDate()).isEqualTo(nemsLastUpdatedDate);
+        var activeSuspensions = activeSuspensionsDb.getByNhsNumber(nhsNumber);
+        assertThat(activeSuspensions.getNhsNumber()).isEqualTo(nhsNumber);
+        assertThat(activeSuspensions.getPreviousOdsCode()).isEqualTo(previousOdsCode);
+        assertThat(activeSuspensions.getNemsLastUpdatedDate()).isEqualTo(nemsLastUpdatedDate);
     }
 
     @Test
     void shouldHandleNhsNumberThatDoesNotExistInDb() {
         var notExistingNhsNumber = "9898989898";
-        var nonExistentActiveSuspensionData = activeSuspensionsDetailsDb.getByNhsNumber(notExistingNhsNumber);
+        var nonExistentActiveSuspensionData = activeSuspensionsDb.getByNhsNumber(notExistingNhsNumber);
         assertThat(nonExistentActiveSuspensionData).isEqualTo(null);
     }
 

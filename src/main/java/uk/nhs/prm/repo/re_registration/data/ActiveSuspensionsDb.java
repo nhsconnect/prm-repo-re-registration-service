@@ -17,7 +17,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ActiveSuspensionsDetailsDb {
+public class ActiveSuspensionsDb {
     private final DynamoDbClient dynamoDbClient;
     private final AppConfig config;
 
@@ -25,7 +25,7 @@ public class ActiveSuspensionsDetailsDb {
         Map<String, AttributeValue> key = new HashMap<>();
         key.put("nhs_number", AttributeValue.builder().s(nhsNumber).build());
         var getItemResponse = dynamoDbClient.getItem(GetItemRequest.builder()
-                .tableName(config.activeSuspensionsDetailsDynamoDbTableName())
+                .tableName(config.activeSuspensionsDynamoDbTableName())
                 .key(key)
                 .build());
 
@@ -42,7 +42,7 @@ public class ActiveSuspensionsDetailsDb {
         item.put("nems_last_updated_date", AttributeValue.builder().s(activeSuspensionMessage.getNemsLastUpdatedDate()).build());
 
         dynamoDbClient.putItem(PutItemRequest.builder()
-                .tableName(config.activeSuspensionsDetailsDynamoDbTableName())
+                .tableName(config.activeSuspensionsDynamoDbTableName())
                 .item(item)
                 .build());
     }

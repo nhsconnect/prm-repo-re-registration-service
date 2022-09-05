@@ -11,17 +11,17 @@ public class AppConfig {
     private final String environment;
     private final String reRegistrationsQueueName;
     private final String activeSuspensionsQueueName;
-    private final String activeSuspensionsDetailsDynamoDbTableName;
+    private final String activeSuspensionsDynamoDbTableName;
 
     public AppConfig(@Value("${environment}") String environment,
                      @Value("${aws.reRegistrationsQueueName}") String reRegistrationsQueueName,
                      @Value("${aws.activeSuspensionsQueueName}") String activeSuspensionsQueueName,
-                     @Value("${aws.activeSuspensionsDetailsDynamoDbTableName}") String activeSuspensionsDetailsDynamoDbTableName
+                     @Value("${aws.activeSuspensionsDynamoDbTableName}") String activeSuspensionsDynamoDbTableName
     ) {
         this.environment = environment;
         this.reRegistrationsQueueName = reRegistrationsQueueName;
         this.activeSuspensionsQueueName = activeSuspensionsQueueName;
-        this.activeSuspensionsDetailsDynamoDbTableName = activeSuspensionsDetailsDynamoDbTableName;
+        this.activeSuspensionsDynamoDbTableName = activeSuspensionsDynamoDbTableName;
     }
 
     public String environment() {
@@ -36,7 +36,7 @@ public class AppConfig {
         return activeSuspensionsQueueName;
     }
 
-    public String activeSuspensionsDetailsDynamoDbTableName() { return activeSuspensionsDetailsDynamoDbTableName; }
+    public String activeSuspensionsDynamoDbTableName() { return activeSuspensionsDynamoDbTableName; }
 
     @Bean
     @SuppressWarnings("unused")
