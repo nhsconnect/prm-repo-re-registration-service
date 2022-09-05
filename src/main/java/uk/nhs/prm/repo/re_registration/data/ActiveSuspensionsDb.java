@@ -38,7 +38,7 @@ public class ActiveSuspensionsDb {
 
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("nhs_number", AttributeValue.builder().s(activeSuspensionMessage.getNhsNumber()).build());
-        item.put("previous_ods_code", AttributeValue.builder().s(activeSuspensionMessage.getPreviousOdsCode()).build());
+        item.put("previous_gp", AttributeValue.builder().s(activeSuspensionMessage.getPreviousOdsCode()).build());
         item.put("nems_last_updated_date", AttributeValue.builder().s(activeSuspensionMessage.getNemsLastUpdatedDate()).build());
 
         dynamoDbClient.putItem(PutItemRequest.builder()
@@ -52,7 +52,7 @@ public class ActiveSuspensionsDb {
             return null;
         }
         var nhsNumber = itemResponse.item().get("nhs_number").s();
-        var previousOdsCode = itemResponse.item().get("previous_ods_code").s();
+        var previousOdsCode = itemResponse.item().get("previous_gp").s();
         var nemsLastUpdatedDate = itemResponse.item().get("nems_last_updated_date").s();
         return new ActiveSuspensionsMessage(nhsNumber, previousOdsCode, nemsLastUpdatedDate);
     }
