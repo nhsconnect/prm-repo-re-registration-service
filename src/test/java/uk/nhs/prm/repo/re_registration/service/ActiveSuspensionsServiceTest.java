@@ -25,7 +25,7 @@ class ActiveSuspensionsServiceTest {
 
     @Test
     void shouldReturnNullWhenThereIsNoActiveSuspensionRecordFoundInDb(){
-        when(activeSuspensionsDb.getByNhsNumber(any())).thenReturn(any());
+        when(activeSuspensionsDb.getByNhsNumber(any())).thenReturn(null);
         activeSuspensionsService.checkActiveSuspension(getReRegistrationEvent());
         assertNull(activeSuspensionsDb.getByNhsNumber(nhsNumber));
     }

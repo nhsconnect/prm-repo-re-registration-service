@@ -7,8 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
-import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoServerException;
+import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.AuditMessage;
 import uk.nhs.prm.repo.re_registration.model.DeleteAuditMessage;
@@ -16,6 +16,7 @@ import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import uk.nhs.prm.repo.re_registration.parser.ReRegistrationParser;
 import uk.nhs.prm.repo.re_registration.pds.IntermittentErrorPdsException;
 import uk.nhs.prm.repo.re_registration.pds.PdsAdaptorService;
+import uk.nhs.prm.repo.re_registration.service.ActiveSuspensionsService;
 
 @Slf4j
 @Component
@@ -27,6 +28,7 @@ public class ReRegistrationsHandler {
     private final ToggleConfig toggleConfig;
     private final ReRegistrationAuditPublisher auditPublisher;
     private final EhrRepoService ehrRepoService;
+    private final ActiveSuspensionsService activeSuspensionsService;
 
     public void process(String payload) {
         log.info("RECEIVED: Re-registrations Event Message, payload length: " + payload.length());
@@ -34,7 +36,13 @@ public class ReRegistrationsHandler {
 
         if (toggleConfig.canSendDeleteEhrRequest()) {
             log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
-            processReRegistration(reRegistrationEvent);
+            var isActiveSuspensions = activeSuspensionsService.checkActiveSuspension(reRegistrationEvent);
+            if(isActiveSuspensions!=null){
+                processReRegistration(reRegistrationEvent);
+            }else{
+                log.info("Not a re-registration for MOF updated patient.");
+                sendAuditMessage(reRegistrationEvent, "NO_ACTION:UNKNOWN_REGISTRATION_EVENT_RECEIVED");
+            }
         } else {
             log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
             sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");

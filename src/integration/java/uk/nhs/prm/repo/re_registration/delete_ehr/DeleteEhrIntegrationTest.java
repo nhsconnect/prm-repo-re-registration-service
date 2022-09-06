@@ -7,6 +7,7 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,8 @@ import static org.awaitility.Awaitility.await;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration( classes = LocalStackAwsConfig.class)
 @DirtiesContext
-public class DeleteEhrntegrationTest {
+@Disabled("Disabled due to WIP for PRMT-2765")
+public class DeleteEhrIntegrationTest {
 
     public static final String NHS_NUMBER = "1234567890";
 
