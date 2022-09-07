@@ -329,7 +329,8 @@ data "aws_iam_policy_document" "dynamodb-table-access" {
   statement {
     actions   = [
       "dynamodb:GetItem",
-      "dynamodb:PutItem"
+      "dynamodb:PutItem",
+      "dynamodb:DeleteItem"
     ]
     resources = [
       "arn:aws:dynamodb:${var.region}:${data.aws_caller_identity.current.account_id}:table/${aws_dynamodb_table.active_suspensions.name}"
