@@ -47,6 +47,23 @@ public class ActiveSuspensionsDb {
 
     }
 
+
+    public void deleteByNhsNumber(String nhsNumber) {
+        log.info("Trying to delete the record by nhsNumber from the active suspensions db.");
+
+        Map<String, AttributeValue> key = new HashMap<>();
+        key.put("nhs_number", AttributeValue.builder().s(nhsNumber).build());
+
+        try{
+            dynamoDbClient.deleteItem(DeleteItemRequest.builder()
+                    .tableName(config.activeSuspensionsDynamoDbTableName())
+                    .key(key)
+                    .build());
+        }catch (DynamoDbException exception){
+            log.error("Error while deleting active-suspensions record from the DB.", exception);
+        }
+    }
+
     private ActiveSuspensionsMessage fromDbItem(GetItemResponse itemResponse) {
         if (!itemResponse.hasItem()) {
             return null;

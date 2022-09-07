@@ -167,6 +167,19 @@ class ReRegistrationsHandlerTest {
         verify(auditPublisher, times(1)).sendMessage(new AuditMessage("nemsMessageId", "NO_ACTION:UNKNOWN_REGISTRATION_EVENT_RECEIVED"));
     }
 
+    @Test
+    void shouldInvokeHandleActiveSuspensionsWhenReRegistrationReceivedAndActiveSuspensionsFoundInDB() throws JsonProcessingException {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
+        when(activeSuspensionsService.checkActiveSuspension(any())).thenReturn(getActiveSuspensionsMessage());
+        when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
+        when(ehrRepoService.deletePatientEhr(any())).thenReturn(createSuccessfulEhrDeleteResponse());
+        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
+        verify(activeSuspensionsService, times(1)).handleActiveSuspensions(getActiveSuspensionsMessage(), createReRegistrationEvent());
+       /* var testLogAppender = addTestLogAppender();
+        var loggedEvent = testLogAppender.findLoggedEvent("Re-registration event received for suspended patient. From ");
+        assertThat(loggedEvent.getMessage()).contains("Re-registration event received for suspended patient");*/
+    }
+
 
     private ReRegistrationEvent createReRegistrationEvent() {
         return new ReRegistrationEvent("1234567890", "ABC123", "nemsMessageId", "2017-11-01T15:00:33+00:00");

@@ -36,9 +36,10 @@ public class ReRegistrationsHandler {
 
         if (toggleConfig.canSendDeleteEhrRequest()) {
             log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
-            var isActiveSuspensions = activeSuspensionsService.checkActiveSuspension(reRegistrationEvent);
-            if(isActiveSuspensions!=null){
+            var activeSuspensionsRecord = activeSuspensionsService.checkActiveSuspension(reRegistrationEvent);
+            if(activeSuspensionsRecord!=null){
                 processReRegistration(reRegistrationEvent);
+                activeSuspensionsService.handleActiveSuspensions(activeSuspensionsRecord, reRegistrationEvent);
             }else{
                 log.info("Not a re-registration for MOF updated patient.");
                 sendAuditMessage(reRegistrationEvent, "NO_ACTION:UNKNOWN_REGISTRATION_EVENT_RECEIVED");

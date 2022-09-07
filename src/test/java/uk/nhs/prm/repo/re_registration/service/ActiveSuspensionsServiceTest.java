@@ -1,18 +1,19 @@
 package uk.nhs.prm.repo.re_registration.service;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ActiveSuspensionsServiceTest {
@@ -34,8 +35,22 @@ class ActiveSuspensionsServiceTest {
 
     @Test
     public void shouldInvokeCallToDbWhenRequestedToGetByNhsNumber(){
-        var activeSuspensionRecord = activeSuspensionsService.checkActiveSuspension(getReRegistrationEvent());
+        activeSuspensionsService.checkActiveSuspension(getReRegistrationEvent());
         verify(activeSuspensionsDb).getByNhsNumber(getActiveSuspensionsMessage().getNhsNumber());
+    }
+
+    @Test
+    public void shouldDeleteRecordWhenActiveSuspensionsRecordFoundByNhsNumberInDb(){
+        activeSuspensionsService.handleActiveSuspensions(getActiveSuspensionsMessage(),getReRegistrationEvent());
+        verify(activeSuspensionsDb).deleteByNhsNumber(getActiveSuspensionsMessage().getNhsNumber());
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenUnableToDeleteRecordInActiveSuspensionsDb(){
+        doThrow(DynamoDbException.class).when(activeSuspensionsDb).deleteByNhsNumber(nhsNumber);
+
+        Assertions.assertThrows(DynamoDbException.class, () ->
+                activeSuspensionsService.handleActiveSuspensions(getActiveSuspensionsMessage(),getReRegistrationEvent()));
     }
 
     private ReRegistrationEvent getReRegistrationEvent() {
