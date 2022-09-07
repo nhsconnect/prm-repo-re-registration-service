@@ -37,7 +37,7 @@ public class ReRegistrationsHandler {
         if (toggleConfig.canSendDeleteEhrRequest()) {
             log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
             var activeSuspensionsRecord = activeSuspensionsService.checkActiveSuspension(reRegistrationEvent);
-            if(activeSuspensionsRecord!=null){
+            if(activeSuspensionsRecord!=null && !checkPdsStatus(reRegistrationEvent)){
                 processReRegistration(reRegistrationEvent);
                 activeSuspensionsService.handleActiveSuspensions(activeSuspensionsRecord, reRegistrationEvent);
             }else{
@@ -51,20 +51,25 @@ public class ReRegistrationsHandler {
     }
 
     private void processReRegistration(ReRegistrationEvent reRegistrationEvent) {
+        if (checkPdsStatus(reRegistrationEvent)) return;
+        log.info("Patient is not suspended, going ahead invoking ehr repo to delete records");
+        deleteEhr(reRegistrationEvent);
+    }
+
+    private boolean checkPdsStatus(ReRegistrationEvent reRegistrationEvent) {
         try {
             log.info("Invoking pds to check patient status...");
             var pdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
             if (pdsAdaptorResponse.isSuspended()) {
                 log.info("Patient is suspended, no need to invoke ehr repo to delete records");
                 sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED");
-                return;
+                return true;
             }
         } catch (HttpStatusCodeException e) {
             handlePdsErrorResponse(reRegistrationEvent, e);
-            return;
+            return true;
         }
-        log.info("Patient is not suspended, going ahead invoking ehr repo to delete records");
-        deleteEhr(reRegistrationEvent);
+        return false;
     }
 
     private void handlePdsErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
