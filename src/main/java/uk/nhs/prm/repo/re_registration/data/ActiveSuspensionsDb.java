@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.*;
 import uk.nhs.prm.repo.re_registration.metrics.AppConfig;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 
@@ -22,6 +19,8 @@ public class ActiveSuspensionsDb {
     private final AppConfig config;
 
     public ActiveSuspensionsMessage getByNhsNumber(String nhsNumber) {
+        log.info("Trying to fetch the record by nhsNumber from the active suspensions db.");
+
         Map<String, AttributeValue> key = new HashMap<>();
         key.put("nhs_number", AttributeValue.builder().s(nhsNumber).build());
         var getItemResponse = dynamoDbClient.getItem(GetItemRequest.builder()
@@ -45,6 +44,7 @@ public class ActiveSuspensionsDb {
                 .tableName(config.activeSuspensionsDynamoDbTableName())
                 .item(item)
                 .build());
+
     }
 
     private ActiveSuspensionsMessage fromDbItem(GetItemResponse itemResponse) {

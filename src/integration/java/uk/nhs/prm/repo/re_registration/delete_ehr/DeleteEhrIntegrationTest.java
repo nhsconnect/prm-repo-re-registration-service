@@ -7,7 +7,6 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
+import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import java.util.List;
@@ -34,13 +35,15 @@ import static org.awaitility.Awaitility.await;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration( classes = LocalStackAwsConfig.class)
 @DirtiesContext
-@Disabled("Disabled due to WIP for PRMT-2765")
 public class DeleteEhrIntegrationTest {
 
     public static final String NHS_NUMBER = "1234567890";
 
     @Autowired
     private AmazonSQSAsync sqs;
+
+    @Autowired
+    ActiveSuspensionsDb activeSuspensionsDb;
 
     @Value("${ehrRepoAuthKey}")
     private String authKey;
@@ -78,9 +81,11 @@ public class DeleteEhrIntegrationTest {
 
 
     @Test
-    void shouldPutTheAuditStatusMessageOnAuditTopicWhenPdsReturnsResponseWithStatusCode200() {
+    void shouldPutTheEHRDeleteAuditMessageOntoTheAuditQueueWhenActiveSuspensionExistsInDBAndPDSReturnsAStatusCode200() {
         stubResponses();
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+
+        activeSuspensionsDb.save(getActiveSuspensionsMessage());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
             String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
@@ -88,6 +93,20 @@ public class DeleteEhrIntegrationTest {
             assertThat(messageBody).contains("\"status\":\"ACTION:RE_REGISTRATION_EHR_DELETED\"");
             assertThat(messageBody).contains("\"nemsMessageId\":\"someNemsId\"");
             assertThat(messageBody).contains("\"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\",\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]");
+        });
+    }
+
+
+    @Test
+    void shouldPutTheUnknownReRegistrationsAuditMessageOntoTheAuditQueueWhenActiveSuspensionDoesNotExistInDBAndPDSReturnsAStatusCode200() {
+        stubResponses();
+        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+
+
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
+            String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
+            System.out.println("Found message - " + messageBody);
+            assertThat(messageBody).contains("\"status\":\"NO_ACTION:UNKNOWN_REGISTRATION_EVENT_RECEIVED\"");
         });
     }
 
@@ -141,5 +160,9 @@ public class DeleteEhrIntegrationTest {
     private ResponseEntity<String> getPdsResponseString() {
         var pdsResponseString = "{\"nhsNumber\":\"" + NHS_NUMBER + "\",\"isSuspended\":false,\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":\"managingOrganisation\",\"recordETag\":\"etag\",\"isDeceased\":false}";
         return new ResponseEntity<>(pdsResponseString, HttpStatus.OK);
+    }
+
+    private ActiveSuspensionsMessage getActiveSuspensionsMessage() {
+        return new ActiveSuspensionsMessage(NHS_NUMBER, "previous-ods-code", "last-updated-suspension");
     }
 }

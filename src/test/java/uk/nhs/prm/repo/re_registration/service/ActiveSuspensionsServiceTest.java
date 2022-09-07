@@ -6,10 +6,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
+import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,7 +32,17 @@ class ActiveSuspensionsServiceTest {
         assertNull(activeSuspensionsDb.getByNhsNumber(nhsNumber));
     }
 
+    @Test
+    public void shouldInvokeCallToDbWhenRequestedToGetByNhsNumber(){
+        var activeSuspensionRecord = activeSuspensionsService.checkActiveSuspension(getReRegistrationEvent());
+        verify(activeSuspensionsDb).getByNhsNumber(getActiveSuspensionsMessage().getNhsNumber());
+    }
+
     private ReRegistrationEvent getReRegistrationEvent() {
-        return new ReRegistrationEvent("1234567890", "ABC123", "nemsMessageId", "2017-11-01T15:00:33+00:00");
+        return new ReRegistrationEvent(nhsNumber, "new-ods-code", "nemsMessageId", "last-updated-reregistration");
+    }
+
+    private ActiveSuspensionsMessage getActiveSuspensionsMessage() {
+        return new ActiveSuspensionsMessage(nhsNumber, "previous-ods-code", "last-updated-suspension");
     }
 }
