@@ -1,6 +1,7 @@
 package uk.nhs.prm.repo.re_registration.model;
 
 import lombok.Getter;
+import uk.nhs.prm.repo.re_registration.audit.AuditMessages;
 
 import java.util.List;
 import java.util.Objects;
@@ -11,7 +12,7 @@ public class DeleteAuditMessage extends AuditMessage {
     private final List<String> conversationIds;
 
     public DeleteAuditMessage(String nemsMessageId, List<String> conversationIds) {
-        super(nemsMessageId, "ACTION:RE_REGISTRATION_EHR_DELETED");
+        super(nemsMessageId, AuditMessages.SUCCESSFULLY_DELETED_EHR.status());
         this.conversationIds = conversationIds;
     }
 
