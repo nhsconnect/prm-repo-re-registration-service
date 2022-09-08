@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
+import uk.nhs.prm.repo.re_registration.audit.AuditMessages;
 import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoServerException;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
@@ -42,11 +43,11 @@ public class ReRegistrationsHandler {
                 activeSuspensionsService.handleActiveSuspensions(activeSuspensionsRecord, reRegistrationEvent);
             }else{
                 log.info("Not a re-registration for MOF updated patient.");
-                sendAuditMessage(reRegistrationEvent, "NO_ACTION:UNKNOWN_REGISTRATION_EVENT_RECEIVED");
+                sendAuditMessage(reRegistrationEvent, AuditMessages.UNKNOWN_REREGISTRATIONS.status());
             }
         } else {
             log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
-            sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
+            sendAuditMessage(reRegistrationEvent, AuditMessages.NOT_PROCESSING_REREGISTRATIONS.status());
         }
     }
 
@@ -62,7 +63,7 @@ public class ReRegistrationsHandler {
             var pdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
             if (pdsAdaptorResponse.isSuspended()) {
                 log.info("Patient is suspended, no need to invoke ehr repo to delete records");
-                sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_FAILED_STILL_SUSPENDED");
+                sendAuditMessage(reRegistrationEvent, AuditMessages.STILL_SUSPENDED.status());
                 return true;
             }
         } catch (HttpStatusCodeException e) {
@@ -75,7 +76,7 @@ public class ReRegistrationsHandler {
     private void handlePdsErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
         if (e.getStatusCode().is4xxClientError()) {
             log.info("Encountered client error with status code : {}", e.getStatusCode());
-            sendAuditMessage(reRegistrationEvent, "NO_ACTION:RE_REGISTRATION_FAILED_PDS_ERROR");
+            sendAuditMessage(reRegistrationEvent, AuditMessages.PDS_ERROR.status());
         } else if (e.getStatusCode().is5xxServerError()) {
             log.info("Caught retryable exception: " + e.getMessage());
             log.info("Encountered server error with status code : {}", e.getStatusCode());
@@ -98,10 +99,10 @@ public class ReRegistrationsHandler {
     private void handleEhrRepoErrorResponse(ReRegistrationEvent reRegistrationEvent, HttpStatusCodeException e) {
         if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
             log.info("Encountered client error with status code : {}", e.getStatusCode());
-            auditPublisher.sendMessage(new AuditMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_NOT_IN_REPO"));
+            auditPublisher.sendMessage(new AuditMessage(reRegistrationEvent.getNemsMessageId(), AuditMessages.EHR_NOT_IN_REPO.status()));
         } else if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
             log.info("Encountered client error with status code : {}", e.getStatusCode());
-            auditPublisher.sendMessage(new AuditMessage(reRegistrationEvent.getNemsMessageId(), "NO_ACTION:RE_REGISTRATION_EHR_FAILED_TO_DELETE"));
+            auditPublisher.sendMessage(new AuditMessage(reRegistrationEvent.getNemsMessageId(), AuditMessages.FAILURE_TO_DELETE_EHR.status()));
         } else if (e.getStatusCode().is5xxServerError()) {
             log.info("Encountered server error with status code : {}", e.getStatusCode());
             throw new EhrRepoServerException("Encountered error when calling ehr-repo DELETE patient endpoint", e);

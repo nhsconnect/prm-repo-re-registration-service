@@ -1,10 +1,12 @@
 package uk.nhs.prm.repo.re_registration.message_publishers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import uk.nhs.prm.repo.re_registration.model.AuditMessage;
 
 @Component
+@Slf4j
 public class ReRegistrationAuditPublisher {
 
     private final MessagePublisher messagePublisher;
@@ -17,5 +19,6 @@ public class ReRegistrationAuditPublisher {
 
     public void sendMessage(AuditMessage message) {
         messagePublisher.sendMessage(reRegistrationAuditTopicArn, message.toJsonString());
+        log.info("Audit Message : " , message);
     }
 }
