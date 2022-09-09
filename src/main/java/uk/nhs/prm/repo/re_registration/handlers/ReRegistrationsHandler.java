@@ -33,19 +33,25 @@ public class ReRegistrationsHandler {
     private final ActiveSuspensionsService activeSuspensionsService;
 
     public void process(String payload) {
-        log.info("RECEIVED: Re-registrations Event Message, payload length: " + payload.length());
+        log.info("RECEIVED: Re-registrations Event Message");
         var reRegistrationEvent = parser.parse(payload);
+        var activeSuspensionsRecord = activeSuspensionsService.checkActiveSuspension(reRegistrationEvent);
 
+        if (activeSuspensionsRecord != null) {
+            processActiveReregistration(reRegistrationEvent, activeSuspensionsRecord);
+        } else {
+            auditUnknownReRegistrations(reRegistrationEvent);
+        }
+    }
+
+    private void processActiveReregistration(ReRegistrationEvent reRegistrationEvent, ActiveSuspensionsMessage activeSuspensionsRecord) {
         if (toggleToSendDeleteEhr()) {
-            var activeSuspensionsRecord = activeSuspensionsService.checkActiveSuspension(reRegistrationEvent);
-
-            if (isReRegistrationForActiveSuspension(reRegistrationEvent, activeSuspensionsRecord)) {
+            if (!isSuspendedOnPds(reRegistrationEvent)) {
                 handleReRegistrationsForPreviousSuspensions(reRegistrationEvent, activeSuspensionsRecord);
-            } else {
-                auditUnknownReRegistrations(reRegistrationEvent);
             }
 
         } else {
+            activeSuspensionsService.handleActiveSuspensions(activeSuspensionsRecord, reRegistrationEvent);
             sendAuditMessage(reRegistrationEvent, AuditMessages.NOT_PROCESSING_REREGISTRATIONS.status());
         }
     }

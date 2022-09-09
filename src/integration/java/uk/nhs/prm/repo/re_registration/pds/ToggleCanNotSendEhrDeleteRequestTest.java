@@ -15,7 +15,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
+import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import java.util.List;
@@ -36,6 +38,9 @@ public class ToggleCanNotSendEhrDeleteRequestTest {
 
     @Autowired
     private AmazonSQSAsync sqs;
+
+    @Autowired
+    private ActiveSuspensionsDb activeSuspensionsDb;
 
     @Value("${aws.reRegistrationsQueueName}")
     private String reRegistrationsQueueName;
@@ -60,13 +65,25 @@ public class ToggleCanNotSendEhrDeleteRequestTest {
     }
 
     @Test
-    void shouldSendToAuditQueueAndNotProcessMessageWhenToggleIsFalse() {
+    void shouldSendToAuditQueueAndNotProcessMessageWhenToggleIsFalseAndActiveSuspensionIsFound() {
+        var activeSuspensionsMessage = new ActiveSuspensionsMessage(NHS_NUMBER, "previous-ods-code", "last-updated-suspension");
+        activeSuspensionsDb.save(activeSuspensionsMessage);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
             String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
             assertThat(messageBody).contains(STATUS_FOR_RECEIVED_REGISTRATION_EVENT);
             assertThat(messageBody).contains(nemsMessageId);
+        });
+    }
+
+    @Test
+    void shouldSendUnknownMessageToAuditQueueAndNotProcessMessageWhenToggleIsFalseAndActiveSuspensionNotIsFound() {
+        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
+            String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
+            assertThat(messageBody).contains("NO_ACTION:UNKNOWN_REGISTRATION_EVENT_RECEIVED");
         });
     }
 

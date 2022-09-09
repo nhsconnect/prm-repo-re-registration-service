@@ -64,14 +64,6 @@ class ReRegistrationsHandlerTest {
         when(parser.parse(any())).thenReturn(reRegistrationEvent);
     }
 
-    @Test
-    public void shouldLogTheLengthOfMessageReceived() {
-        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
-        var testLogAppender = addTestLogAppender();
-        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
-        var loggedEvent = testLogAppender.findLoggedEvent("RECEIVED");
-        assertThat(loggedEvent.getMessage()).endsWith("length: 134");
-    }
 
     @Test
     void shouldCallPdsAdaptorServiceToGetPatientsPdsStatusWhenHandleMessageIsInvoked() {
@@ -85,6 +77,7 @@ class ReRegistrationsHandlerTest {
     @Test
     void shouldNotCallPdsAndSendMessageToAuditTopicWithCanSendDeleteEhrRequestIsFalse() {
         when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
+        when(activeSuspensionsService.checkActiveSuspension(any())).thenReturn(getActiveSuspensionsMessage());
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verifyNoInteractions(pdsAdaptorService);
         var auditMessage = new AuditMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
@@ -160,8 +153,19 @@ class ReRegistrationsHandlerTest {
     }
 
     @Test
+    void shouldCallHandleActiveSuspensionWhenDeleteEhrToggleIsFalseAndSuspensionActive() {
+        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(false);
+        var activeSuspensionsMessage = getActiveSuspensionsMessage();
+        when(activeSuspensionsService.checkActiveSuspension(any())).thenReturn(activeSuspensionsMessage);
+        reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
+        verifyNoInteractions(pdsAdaptorService);
+        var auditMessage = new AuditMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
+        verify(auditPublisher).sendMessage(auditMessage);
+        verify(activeSuspensionsService).handleActiveSuspensions(activeSuspensionsMessage, reRegistrationEvent);
+    }
+
+    @Test
     void shouldPublishUnknownReRegistrationMessageToAuditTopicWhenThereIsNoActiveSuspensionRecordFoundInDb(){
-        when(toggleConfig.canSendDeleteEhrRequest()).thenReturn(true);
         when(activeSuspensionsService.checkActiveSuspension(any())).thenReturn(null);
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verify(auditPublisher, times(1)).sendMessage(new AuditMessage("nemsMessageId", "NO_ACTION:UNKNOWN_REGISTRATION_EVENT_RECEIVED"));

@@ -66,7 +66,6 @@ public class ReRegistrationsIntegrationTest {
         await().atMost(10, TimeUnit.SECONDS).pollInterval(1, TimeUnit.SECONDS).untilAsserted(() -> {
             var receiveLog = logAppender.findLoggedEvent("RECEIVED");
             assertThat(receiveLog).isNotNull();
-            assertThat(receiveLog.getMessage()).contains("length: " + eventMessage.length());
         });
 
 

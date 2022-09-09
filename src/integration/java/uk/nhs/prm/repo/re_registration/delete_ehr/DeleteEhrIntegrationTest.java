@@ -37,7 +37,7 @@ import static org.awaitility.Awaitility.await;
 @DirtiesContext
 public class DeleteEhrIntegrationTest {
 
-    public static final String NHS_NUMBER = "1234567890";
+    public static final String NHS_NUMBER = "9999567890";
 
     @Autowired
     private AmazonSQSAsync sqs;
