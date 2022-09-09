@@ -18,7 +18,7 @@ public class ReRegistrationAuditPublisher {
     }
 
     public void sendMessage(AuditMessage message) {
+        log.info("Publishing audit message {} to {}" , message.getStatus(), reRegistrationAuditTopicArn);
         messagePublisher.sendMessage(reRegistrationAuditTopicArn, message.toJsonString());
-        log.info("Audit status is : " , message.getStatus());
     }
 }

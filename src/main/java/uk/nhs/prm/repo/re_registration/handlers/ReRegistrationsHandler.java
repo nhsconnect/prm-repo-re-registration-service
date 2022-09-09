@@ -36,21 +36,29 @@ public class ReRegistrationsHandler {
         log.info("RECEIVED: Re-registrations Event Message, payload length: " + payload.length());
         var reRegistrationEvent = parser.parse(payload);
 
-        if (toggleConfig.canSendDeleteEhrRequest()) {
-            log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
+        if (toggleToSendDeleteEhr()) {
             var activeSuspensionsRecord = activeSuspensionsService.checkActiveSuspension(reRegistrationEvent);
 
             if (isReRegistrationForActiveSuspension(reRegistrationEvent, activeSuspensionsRecord)) {
                 handleReRegistrationsForPreviousSuspensions(reRegistrationEvent, activeSuspensionsRecord);
             } else {
-                log.info("Not a re-registration for MOF updated patient.");
-                sendAuditMessage(reRegistrationEvent, AuditMessages.UNKNOWN_REREGISTRATIONS.status());
+                auditUnknownReRegistrations(reRegistrationEvent);
             }
 
         } else {
-            log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
             sendAuditMessage(reRegistrationEvent, AuditMessages.NOT_PROCESSING_REREGISTRATIONS.status());
         }
+    }
+
+    private void auditUnknownReRegistrations(ReRegistrationEvent reRegistrationEvent) {
+        log.info("Not a re-registration for MOF updated patient.");
+        sendAuditMessage(reRegistrationEvent, AuditMessages.UNKNOWN_REREGISTRATIONS.status());
+    }
+
+    private boolean toggleToSendDeleteEhr() {
+        var canSendDeleteEhrRequest = toggleConfig.canSendDeleteEhrRequest();
+        log.info("Toggle canSendDeleteEhrRequest : {} ", canSendDeleteEhrRequest);
+        return canSendDeleteEhrRequest;
     }
 
     private void handleReRegistrationsForPreviousSuspensions(ReRegistrationEvent reRegistrationEvent, ActiveSuspensionsMessage activeSuspensionsRecord) {
