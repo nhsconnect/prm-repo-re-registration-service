@@ -11,6 +11,7 @@ import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoServerException;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
+import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.model.AuditMessage;
 import uk.nhs.prm.repo.re_registration.model.DeleteAuditMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
@@ -38,26 +39,36 @@ public class ReRegistrationsHandler {
         if (toggleConfig.canSendDeleteEhrRequest()) {
             log.info("Toggle canSendDeleteEhrRequest is true: processing event to delete ehr");
             var activeSuspensionsRecord = activeSuspensionsService.checkActiveSuspension(reRegistrationEvent);
-            if(activeSuspensionsRecord!=null && !checkPdsStatus(reRegistrationEvent)){
-                processReRegistration(reRegistrationEvent);
-                activeSuspensionsService.handleActiveSuspensions(activeSuspensionsRecord, reRegistrationEvent);
-            }else{
+
+            if (isReRegistrationForActiveSuspension(reRegistrationEvent, activeSuspensionsRecord)) {
+                handleReRegistrationsForPreviousSuspensions(reRegistrationEvent, activeSuspensionsRecord);
+            } else {
                 log.info("Not a re-registration for MOF updated patient.");
                 sendAuditMessage(reRegistrationEvent, AuditMessages.UNKNOWN_REREGISTRATIONS.status());
             }
+
         } else {
             log.info("Toggle canSendDeleteEhrRequest is false: not processing event, sending update to audit");
             sendAuditMessage(reRegistrationEvent, AuditMessages.NOT_PROCESSING_REREGISTRATIONS.status());
         }
     }
 
+    private void handleReRegistrationsForPreviousSuspensions(ReRegistrationEvent reRegistrationEvent, ActiveSuspensionsMessage activeSuspensionsRecord) {
+        processReRegistration(reRegistrationEvent);
+        activeSuspensionsService.handleActiveSuspensions(activeSuspensionsRecord, reRegistrationEvent);
+    }
+
+    private boolean isReRegistrationForActiveSuspension(ReRegistrationEvent reRegistrationEvent, ActiveSuspensionsMessage activeSuspensionsRecord) {
+        return activeSuspensionsRecord != null && !isSuspendedOnPds(reRegistrationEvent);
+    }
+
     private void processReRegistration(ReRegistrationEvent reRegistrationEvent) {
-        if (checkPdsStatus(reRegistrationEvent)) return;
+        if (isSuspendedOnPds(reRegistrationEvent)) return;
         log.info("Patient is not suspended, going ahead invoking ehr repo to delete records");
         deleteEhr(reRegistrationEvent);
     }
 
-    private boolean checkPdsStatus(ReRegistrationEvent reRegistrationEvent) {
+    private boolean isSuspendedOnPds(ReRegistrationEvent reRegistrationEvent) {
         try {
             log.info("Invoking pds to check patient status...");
             var pdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);

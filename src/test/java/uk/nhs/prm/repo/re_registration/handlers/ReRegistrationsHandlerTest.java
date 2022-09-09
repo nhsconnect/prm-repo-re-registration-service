@@ -175,9 +175,6 @@ class ReRegistrationsHandlerTest {
         when(ehrRepoService.deletePatientEhr(any())).thenReturn(createSuccessfulEhrDeleteResponse());
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
         verify(activeSuspensionsService, times(1)).handleActiveSuspensions(getActiveSuspensionsMessage(), createReRegistrationEvent());
-       /* var testLogAppender = addTestLogAppender();
-        var loggedEvent = testLogAppender.findLoggedEvent("Re-registration event received for suspended patient. From ");
-        assertThat(loggedEvent.getMessage()).contains("Re-registration event received for suspended patient");*/
     }
 
 

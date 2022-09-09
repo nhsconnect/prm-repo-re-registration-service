@@ -8,7 +8,6 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +19,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.infra.LocalStackAwsConfig;
+import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
 import java.util.ArrayList;
@@ -37,7 +38,6 @@ import static org.awaitility.Awaitility.await;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration( classes = LocalStackAwsConfig.class)
 @DirtiesContext
-@Disabled("Disabled due to WIP for PRMT-2765")
 public class PdsAdaptorServiceIntegrationTest {
 
     public static final String NHS_NUMBER = "1234567890";
@@ -57,12 +57,15 @@ public class PdsAdaptorServiceIntegrationTest {
     private String reRegistrationsAuditUrl;
     private String nemsMessageId = "nemsMessageId";
 
+    @Autowired
+    ActiveSuspensionsDb activeSuspensionsDb;
 
     @BeforeEach
     public void setUp() {
         stubPdsAdaptor = initializeWebServer();
         reRegistrationsQueueUrl = sqs.getQueueUrl(reRegistrationsQueueName).getQueueUrl();
         reRegistrationsAuditUrl = sqs.getQueueUrl(reRegistrationsAuditQueueName).getQueueUrl();
+        activeSuspensionsDb.save(getActiveSuspensionsMessage());
     }
 
     @AfterEach
@@ -190,5 +193,9 @@ public class PdsAdaptorServiceIntegrationTest {
     private ResponseEntity<String> getPdsResponseString() {
         var pdsResponseString = "{\"nhsNumber\":\"" + NHS_NUMBER + "\",\"isSuspended\":true,\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":\"managingOrganisation\",\"recordETag\":\"etag\",\"isDeceased\":false}";
         return new ResponseEntity<>(pdsResponseString, HttpStatus.OK);
+    }
+
+    private ActiveSuspensionsMessage getActiveSuspensionsMessage() {
+        return new ActiveSuspensionsMessage(NHS_NUMBER, "previous-ods-code", "last-updated-suspension");
     }
 }
