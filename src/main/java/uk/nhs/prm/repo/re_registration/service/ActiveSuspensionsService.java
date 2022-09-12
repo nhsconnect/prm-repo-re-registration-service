@@ -19,7 +19,7 @@ public class ActiveSuspensionsService {
         return activeSuspensionsDb.getByNhsNumber(reRegistrationEvent.getNhsNumber());
     }
 
-    public void handleActiveSuspensions(ActiveSuspensionsMessage activeSuspensionsRecord, ReRegistrationEvent reRegistrationEvent) {
+    public void deleteRecord(ActiveSuspensionsMessage activeSuspensionsRecord, ReRegistrationEvent reRegistrationEvent) {
         log.info("Re-registration event received for suspended patient. From {} to {} at {}", activeSuspensionsRecord.getPreviousOdsCode(), reRegistrationEvent.getNewlyRegisteredOdsCode(), reRegistrationEvent.getLastUpdated());
 
         activeSuspensionsDb.deleteByNhsNumber(activeSuspensionsRecord.getNhsNumber());

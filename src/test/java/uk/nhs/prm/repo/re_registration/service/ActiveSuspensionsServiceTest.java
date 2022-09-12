@@ -41,7 +41,7 @@ class ActiveSuspensionsServiceTest {
 
     @Test
     public void shouldDeleteRecordWhenActiveSuspensionsRecordFoundByNhsNumberInDb(){
-        activeSuspensionsService.handleActiveSuspensions(getActiveSuspensionsMessage(),getReRegistrationEvent());
+        activeSuspensionsService.deleteRecord(getActiveSuspensionsMessage(),getReRegistrationEvent());
         verify(activeSuspensionsDb).deleteByNhsNumber(getActiveSuspensionsMessage().getNhsNumber());
     }
 
@@ -50,7 +50,7 @@ class ActiveSuspensionsServiceTest {
         doThrow(DynamoDbException.class).when(activeSuspensionsDb).deleteByNhsNumber(nhsNumber);
 
         Assertions.assertThrows(DynamoDbException.class, () ->
-                activeSuspensionsService.handleActiveSuspensions(getActiveSuspensionsMessage(),getReRegistrationEvent()));
+                activeSuspensionsService.deleteRecord(getActiveSuspensionsMessage(),getReRegistrationEvent()));
     }
 
     private ReRegistrationEvent getReRegistrationEvent() {

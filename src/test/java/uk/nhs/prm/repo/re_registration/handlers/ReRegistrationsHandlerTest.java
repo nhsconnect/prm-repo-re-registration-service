@@ -12,8 +12,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import uk.nhs.prm.repo.re_registration.config.ToggleConfig;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrDeleteResponseContent;
-import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
 import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoServerException;
+import uk.nhs.prm.repo.re_registration.ehr_repo.EhrRepoService;
 import uk.nhs.prm.repo.re_registration.message_publishers.ReRegistrationAuditPublisher;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.model.AuditMessage;
@@ -27,11 +27,9 @@ import uk.nhs.prm.repo.re_registration.service.ActiveSuspensionsService;
 
 import java.util.Arrays;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static uk.nhs.prm.repo.re_registration.logging.TestLogAppender.addTestLogAppender;
 
 @ExtendWith(MockitoExtension.class)
 class ReRegistrationsHandlerTest {
@@ -161,7 +159,7 @@ class ReRegistrationsHandlerTest {
         verifyNoInteractions(pdsAdaptorService);
         var auditMessage = new AuditMessage("nemsMessageId", "NO_ACTION:RE_REGISTRATION_EVENT_RECEIVED");
         verify(auditPublisher).sendMessage(auditMessage);
-        verify(activeSuspensionsService).handleActiveSuspensions(activeSuspensionsMessage, reRegistrationEvent);
+        verify(activeSuspensionsService).deleteRecord(activeSuspensionsMessage, reRegistrationEvent);
     }
 
     @Test
@@ -178,7 +176,7 @@ class ReRegistrationsHandlerTest {
         when(pdsAdaptorService.getPatientPdsStatus(any())).thenReturn(getPdsResponseStringWithSuspendedStatus(false));
         when(ehrRepoService.deletePatientEhr(any())).thenReturn(createSuccessfulEhrDeleteResponse());
         reRegistrationsHandler.process(reRegistrationEvent.toJsonString());
-        verify(activeSuspensionsService, times(1)).handleActiveSuspensions(getActiveSuspensionsMessage(), createReRegistrationEvent());
+        verify(activeSuspensionsService, times(1)).deleteRecord(getActiveSuspensionsMessage(), createReRegistrationEvent());
     }
 
 

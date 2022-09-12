@@ -51,7 +51,7 @@ public class ReRegistrationsHandler {
             }
 
         } else {
-            activeSuspensionsService.handleActiveSuspensions(activeSuspensionsRecord, reRegistrationEvent);
+            activeSuspensionsService.deleteRecord(activeSuspensionsRecord, reRegistrationEvent);
             sendAuditMessage(reRegistrationEvent, AuditMessages.NOT_PROCESSING_REREGISTRATIONS.status());
         }
     }
@@ -68,23 +68,13 @@ public class ReRegistrationsHandler {
     }
 
     private void handleReRegistrationsForPreviousSuspensions(ReRegistrationEvent reRegistrationEvent, ActiveSuspensionsMessage activeSuspensionsRecord) {
-        processReRegistration(reRegistrationEvent);
-        activeSuspensionsService.handleActiveSuspensions(activeSuspensionsRecord, reRegistrationEvent);
-    }
-
-    private boolean isReRegistrationForActiveSuspension(ReRegistrationEvent reRegistrationEvent, ActiveSuspensionsMessage activeSuspensionsRecord) {
-        return activeSuspensionsRecord != null && !isSuspendedOnPds(reRegistrationEvent);
-    }
-
-    private void processReRegistration(ReRegistrationEvent reRegistrationEvent) {
-        if (isSuspendedOnPds(reRegistrationEvent)) return;
         log.info("Patient is not suspended, going ahead invoking ehr repo to delete records");
         deleteEhr(reRegistrationEvent);
+        activeSuspensionsService.deleteRecord(activeSuspensionsRecord, reRegistrationEvent);
     }
 
     private boolean isSuspendedOnPds(ReRegistrationEvent reRegistrationEvent) {
         try {
-            log.info("Invoking pds to check patient status...");
             var pdsAdaptorResponse = pdsAdaptorService.getPatientPdsStatus(reRegistrationEvent);
             if (pdsAdaptorResponse.isSuspended()) {
                 log.info("Patient is suspended, no need to invoke ehr repo to delete records");
