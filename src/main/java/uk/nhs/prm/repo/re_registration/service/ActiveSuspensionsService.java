@@ -9,7 +9,7 @@ import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 @Service
 @Slf4j
 public class ActiveSuspensionsService {
-    private ActiveSuspensionsDb activeSuspensionsDb;
+    private final ActiveSuspensionsDb activeSuspensionsDb;
 
     public ActiveSuspensionsService(ActiveSuspensionsDb activeSuspensionsDb) {
         this.activeSuspensionsDb = activeSuspensionsDb;
@@ -22,8 +22,11 @@ public class ActiveSuspensionsService {
     public void deleteRecord(ActiveSuspensionsMessage activeSuspensionsRecord, ReRegistrationEvent reRegistrationEvent) {
         log.info("Re-registration event received for suspended patient. From {} to {} at {}", activeSuspensionsRecord.getPreviousOdsCode(), reRegistrationEvent.getNewlyRegisteredOdsCode(), reRegistrationEvent.getLastUpdated());
 
+        if (!activeSuspensionsRecord.getPreviousOdsCode().equals(reRegistrationEvent.getNewlyRegisteredOdsCode())) {
+            log.info("Patient has been re-registered at a different GP practice");
+        }
+
         activeSuspensionsDb.deleteByNhsNumber(activeSuspensionsRecord.getNhsNumber());
         log.info("Successfully deleted active-suspensions record from the DB.");
-
     }
 }
