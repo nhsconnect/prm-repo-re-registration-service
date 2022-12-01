@@ -196,6 +196,6 @@ public class PdsAdaptorServiceIntegrationTest {
     }
 
     private ActiveSuspensionsMessage getActiveSuspensionsMessage() {
-        return new ActiveSuspensionsMessage(NHS_NUMBER, "previous-ods-code", "last-updated-suspension");
+        return new ActiveSuspensionsMessage(NHS_NUMBER, "previous-ods-code", "2017-11-01T15:00:33+00:00");
     }
 }
