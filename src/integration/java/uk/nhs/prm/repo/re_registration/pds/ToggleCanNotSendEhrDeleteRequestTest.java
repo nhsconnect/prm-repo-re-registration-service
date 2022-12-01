@@ -66,7 +66,7 @@ public class ToggleCanNotSendEhrDeleteRequestTest {
 
     @Test
     void shouldSendToAuditQueueAndNotProcessMessageWhenToggleIsFalseAndActiveSuspensionIsFound() {
-        var activeSuspensionsMessage = new ActiveSuspensionsMessage(NHS_NUMBER, "previous-ods-code", "last-updated-suspension");
+        var activeSuspensionsMessage = new ActiveSuspensionsMessage(NHS_NUMBER, "previous-ods-code", "2017-11-01T15:00:33+00:00");
         activeSuspensionsDb.save(activeSuspensionsMessage);
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
