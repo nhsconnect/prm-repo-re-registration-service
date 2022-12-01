@@ -6,6 +6,8 @@ import uk.nhs.prm.repo.re_registration.data.ActiveSuspensionsDb;
 import uk.nhs.prm.repo.re_registration.model.ActiveSuspensionsMessage;
 import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 
+import java.time.LocalDateTime;
+
 @Service
 @Slf4j
 public class ActiveSuspensionsService {
@@ -21,12 +23,22 @@ public class ActiveSuspensionsService {
 
     public void deleteRecord(ActiveSuspensionsMessage activeSuspensionsRecord, ReRegistrationEvent reRegistrationEvent) {
         log.info("Re-registration event received for suspended patient. From {} to {} at {}", activeSuspensionsRecord.getPreviousOdsCode(), reRegistrationEvent.getNewlyRegisteredOdsCode(), reRegistrationEvent.getLastUpdated());
-
-        if (!activeSuspensionsRecord.getPreviousOdsCode().equals(reRegistrationEvent.getNewlyRegisteredOdsCode())) {
-            log.info("Patient has been re-registered at a different GP practice");
-        }
+        filterOutAnomalies(activeSuspensionsRecord, reRegistrationEvent);
 
         activeSuspensionsDb.deleteByNhsNumber(activeSuspensionsRecord.getNhsNumber());
         log.info("Successfully deleted active-suspensions record from the DB.");
+    }
+
+    private void filterOutAnomalies(ActiveSuspensionsMessage activeSuspensionsRecord, ReRegistrationEvent reRegistrationEvent) {
+        // Anomaly = When we receive a re-registration event for a patient who was suspended from the same ODS code less than 2 days before
+        var patientHasBeenReregisteredToSameOdsCode = activeSuspensionsRecord.getPreviousOdsCode().equals(reRegistrationEvent.getNewlyRegisteredOdsCode());
+        LocalDateTime suspensionDateTime = LocalDateTime.parse(activeSuspensionsRecord.getNemsLastUpdatedDate().substring(0, 19));
+        LocalDateTime reregistrationDateTime = LocalDateTime.parse(reRegistrationEvent.getLastUpdated().substring(0, 19));
+
+        boolean isAnAnomaly = patientHasBeenReregisteredToSameOdsCode && suspensionDateTime.isAfter(reregistrationDateTime.minusDays(2));
+
+        if (!isAnAnomaly) {
+            log.info("Patient has been re-registered at a different GP practice, or the same GP practice more than 2 days later");
+        }
     }
 }
