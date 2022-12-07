@@ -37,7 +37,9 @@ public class ActiveSuspensionsService {
 
         boolean isAnAnomaly = patientHasBeenReregisteredToSameOdsCode && suspensionDateTime.isAfter(reregistrationDateTime.minusDays(3));
 
-        if (!isAnAnomaly) {
+        if (isAnAnomaly) {
+            log.info("Anomaly - Patient was re-registered at the same ODS Code - {} - they were suspended from on date - {}", activeSuspensionsRecord.getPreviousOdsCode(), activeSuspensionsRecord.getNemsLastUpdatedDate());
+        } else {
             log.info("Patient has been re-registered at a different GP practice, or at the same GP practice more than 3 days later");
         }
     }
