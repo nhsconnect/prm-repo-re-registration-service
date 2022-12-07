@@ -30,15 +30,15 @@ public class ActiveSuspensionsService {
     }
 
     private void filterOutAnomalies(ActiveSuspensionsMessage activeSuspensionsRecord, ReRegistrationEvent reRegistrationEvent) {
-        // Anomaly = When we receive a re-registration event for a patient who was suspended from the same ODS code less than 2 days before
+        // Anomaly = When we receive a re-registration event for a patient who was suspended from the same ODS code less than 3 days before
         var patientHasBeenReregisteredToSameOdsCode = activeSuspensionsRecord.getPreviousOdsCode().equals(reRegistrationEvent.getNewlyRegisteredOdsCode());
         LocalDateTime suspensionDateTime = LocalDateTime.parse(activeSuspensionsRecord.getNemsLastUpdatedDate().substring(0, 19));
         LocalDateTime reregistrationDateTime = LocalDateTime.parse(reRegistrationEvent.getLastUpdated().substring(0, 19));
 
-        boolean isAnAnomaly = patientHasBeenReregisteredToSameOdsCode && suspensionDateTime.isAfter(reregistrationDateTime.minusDays(2));
+        boolean isAnAnomaly = patientHasBeenReregisteredToSameOdsCode && suspensionDateTime.isAfter(reregistrationDateTime.minusDays(3));
 
         if (!isAnAnomaly) {
-            log.info("Patient has been re-registered at a different GP practice, or the same GP practice more than 2 days later");
+            log.info("Patient has been re-registered at a different GP practice, or at the same GP practice more than 3 days later");
         }
     }
 }

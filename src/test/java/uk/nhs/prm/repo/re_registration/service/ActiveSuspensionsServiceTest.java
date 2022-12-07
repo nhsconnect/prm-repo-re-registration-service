@@ -58,32 +58,32 @@ class ActiveSuspensionsServiceTest {
     }
 
     @Test
-    public void shouldNotLogWhenAReregistrationEventIsAnomalyAndReceivedForAPatientSuspendedFromSameGpWithinLastTwoDays(){
+    public void shouldNotLogWhenAReregistrationEventIsAnomalyAndReceivedForAPatientSuspendedFromSameGpWithinLastThreeDays(){
         var logAppender = addTestLogAppender();
         ActiveSuspensionsMessage suspensionMessage24HoursAgo = getActiveSuspensionsMessage("same-ods-code", "2022-10-20T11:18:24+00:00");
 
         activeSuspensionsService.deleteRecord(suspensionMessage24HoursAgo,getReRegistrationEvent("same-ods-code"));
-        var log = logAppender.findLoggedEvent("Patient has been re-registered at a different GP practice, or the same GP practice more than 2 days later");
+        var log = logAppender.findLoggedEvent("Patient has been re-registered at a different GP practice, or at the same GP practice more than 3 days later");
         assertThat(log).isNull();
     }
 
     @Test
-    public void shouldLogWhenReregistrationEventIsNotAnAnomalyAsItHasBeenMoreThan2Days(){
+    public void shouldLogWhenReregistrationEventIsNotAnAnomalyAsItHasBeenMoreThanThreeDays(){
         var logAppender = addTestLogAppender();
-        ActiveSuspensionsMessage suspensionMessage24HoursAgo = getActiveSuspensionsMessage("same-ods-code", "2022-10-10T11:18:24+00:00");
+        ActiveSuspensionsMessage suspensionMessage24HoursAgo = getActiveSuspensionsMessage("same-ods-code", "2022-10-17T11:18:24+00:00");
 
         activeSuspensionsService.deleteRecord(suspensionMessage24HoursAgo,getReRegistrationEvent("same-ods-code"));
-        var log = logAppender.findLoggedEvent("Patient has been re-registered at a different GP practice, or the same GP practice more than 2 days later");
+        var log = logAppender.findLoggedEvent("Patient has been re-registered at a different GP practice, or at the same GP practice more than 3 days later");
         assertThat(log).isNotNull();
     }
 
     @Test
-    public void shouldLogWhenReregistrationEventIsNotAnAnomalyAsDifferentGPPractices(){
+    public void shouldLogWhenReregistrationEventIsNotAnAnomalyAsDifferentGPPracticesButSuspendedLessThanThreeDaysAgo(){
         var logAppender = addTestLogAppender();
         ActiveSuspensionsMessage suspensionMessage24HoursAgo = getActiveSuspensionsMessage("same-ods-code", "2022-10-20T11:18:24+00:00");
 
         activeSuspensionsService.deleteRecord(suspensionMessage24HoursAgo,getReRegistrationEvent("different-ods-code"));
-        var log = logAppender.findLoggedEvent("Patient has been re-registered at a different GP practice, or the same GP practice more than 2 days later");
+        var log = logAppender.findLoggedEvent("Patient has been re-registered at a different GP practice, or at the same GP practice more than 3 days later");
         assertThat(log).isNotNull();
     }
 
