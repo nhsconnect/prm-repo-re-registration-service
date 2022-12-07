@@ -64,6 +64,7 @@ public class DeleteEhrIntegrationTest {
         stubPdsAdaptor = initializeWebServer();
         reRegistrationsQueueUrl = sqs.getQueueUrl(reRegistrationsQueueName).getQueueUrl();
         reRegistrationsAuditUrl = sqs.getQueueUrl(reRegistrationsAuditQueueName).getQueueUrl();
+        stubResponses();
     }
 
     @AfterEach
@@ -82,10 +83,9 @@ public class DeleteEhrIntegrationTest {
 
     @Test
     void shouldPutTheEHRDeleteAuditMessageOntoTheAuditQueueWhenActiveSuspensionExistsInDBAndPDSReturnsAStatusCode200() {
-        stubResponses();
-        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
-
         activeSuspensionsDb.save(getActiveSuspensionsMessage());
+
+        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
             String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
@@ -99,9 +99,7 @@ public class DeleteEhrIntegrationTest {
 
     @Test
     void shouldPutTheUnknownReRegistrationsAuditMessageOntoTheAuditQueueWhenActiveSuspensionDoesNotExistInDBAndPDSReturnsAStatusCode200() {
-        stubResponses();
         sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
-
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
             String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
