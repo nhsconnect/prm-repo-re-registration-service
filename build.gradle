@@ -4,7 +4,7 @@ plugins {
     id 'java'
     id 'jacoco'
     id 'com.github.spotbugs' version '5.0.13'
-    id 'org.owasp.dependencycheck' version '7.1.1'
+    id 'org.owasp.dependencycheck' version '7.4.4'
 }
 
 group = 'uk.nhs.prm.repo'
@@ -48,7 +48,7 @@ dependencies {
 
     implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:1.1.2'
 
-    implementation platform('software.amazon.awssdk:bom:2.17.288')
+    implementation platform('software.amazon.awssdk:bom:2.18.41')
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:sqs'
     implementation 'software.amazon.awssdk:sns'
@@ -56,12 +56,12 @@ dependencies {
 
     implementation group: 'javax.inject', name: 'javax.inject', version: '1'
     implementation 'org.springframework:spring-jms:5.3.19'
-    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'io.github.resilience4j:resilience4j-retry:1.7.1'
 
     implementation 'net.logstash.logback:logstash-logback-encoder:7.2'
 
-    compileOnly 'org.projectlombok:lombok:1.18.20'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok'
 
     implementation 'com.github.spotbugs:spotbugs-annotations:4.7.3'
@@ -70,8 +70,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-test'
 
     testImplementation "org.mockito:mockito-core:3.+"
-    testImplementation 'com.github.tomakehurst:wiremock-jre8:2.31.0'
-    testImplementation 'org.awaitility:awaitility:3.0.0'
+    testImplementation 'com.github.tomakehurst:wiremock-jre8:2.35.0'
+    testImplementation 'org.awaitility:awaitility:4.2.0'
 }
 
 test {
