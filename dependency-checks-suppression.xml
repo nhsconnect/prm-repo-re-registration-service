@@ -62,4 +62,33 @@
       <packageUrl regex="true">^pkg:maven/commons\-logging/commons\-logging@.*$</packageUrl>
       <cve>CVE-2021-37533</cve>
    </suppress>
+   <suppress>
+      <notes><![CDATA[
+   false positive CVEs not related to package
+   ]]></notes>
+      <packageUrl regex="true">^pkg:maven/org\.yaml/snakeyaml@.*$</packageUrl>
+      <cve>CVE-2022-3064</cve>
+      <cve>CVE-2021-4235</cve>
+   </suppress>
+   <suppress>
+      <notes><![CDATA[
+        false positive CVE-2021-4277 is not related to package
+   ]]></notes>
+      <packageUrl regex="true">^pkg:maven/org\.latencyutils/LatencyUtils@.*$</packageUrl>
+      <cve>CVE-2021-4277</cve>
+   </suppress>
+   <suppress>
+      <notes><![CDATA[
+        false positive CVE-2021-4277 is not related to package
+   ]]></notes>
+      <packageUrl regex="true">^pkg:maven/software\.amazon\.awssdk/json\-utils@.*$</packageUrl>
+      <cve>CVE-2021-4277</cve>
+   </suppress>
+   <suppress>
+      <notes><![CDATA[
+        false positive CVE-2021-4277 is not related to package
+   ]]></notes>
+      <packageUrl regex="true">^pkg:maven/software\.amazon\.awssdk/utils@.*$</packageUrl>
+      <cve>CVE-2021-4277</cve>
+   </suppress>
 </suppressions>
