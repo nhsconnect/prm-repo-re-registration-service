@@ -20,8 +20,8 @@ data "aws_ssm_parameter" "re_registrations_sns_topic_arn" {
   name = "/repo/${var.environment}/output/nems-event-processor/re-registrations-sns-topic-arn"
 }
 
-data "aws_ssm_parameter" "pds_adaptor_service_url" {
-  name = "/repo/${var.environment}/output/prm-deductions-pds-adaptor/service-url"
+data "aws_ssm_parameter" "environment_domain_name" {
+  name = "/repo/${var.environment}/output/prm-deductions-infra/environment-domain-name"
 }
 
 data "aws_ssm_parameter" "pds_adaptor_auth_password" {
@@ -30,10 +30,6 @@ data "aws_ssm_parameter" "pds_adaptor_auth_password" {
 
 data "aws_ssm_parameter" "re_registration_service_authorization_keys_for_ehr_repo" {
   name = "/repo/${var.environment}/user-input/api-keys/ehr-repo/re-registration-service"
-}
-
-data "aws_ssm_parameter" "pds_url" {
-  name = "/repo/${var.environment}/output/prm-deductions-pds-adaptor/service-url"
 }
 
 data "aws_ssm_parameter" "service-to-ehr-repo-sg-id" {

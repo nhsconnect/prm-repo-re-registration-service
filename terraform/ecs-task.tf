@@ -3,6 +3,7 @@ locals {
   task_execution_role   = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.environment}-${var.component_name}-EcsTaskRole"
   task_ecr_url          = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
   task_log_group        = "/nhs/deductions/${var.environment}-${data.aws_caller_identity.current.account_id}/${var.component_name}"
+  env_domain_name       = data.aws_ssm_parameter.environment_domain_name.value
   environment_variables = [
     { name = "NHS_ENVIRONMENT", value = var.environment },
     { name = "AWS_REGION", value = var.region },
@@ -10,12 +11,19 @@ locals {
     { name = "RE_REGISTRATIONS_QUEUE_NAME", value = aws_sqs_queue.re_registrations.name },
     { name = "RE_REGISTRATIONS_AUDIT_QUEUE_NAME", value = aws_sqs_queue.re_registration_audit_uploader.name },
     { name = "ACTIVE_SUSPENSIONS_QUEUE_NAME", value = aws_sqs_queue.active_suspensions.name },
-    { name = "PDS_ADAPTOR_SERVICE_URL", value = data.aws_ssm_parameter.pds_adaptor_service_url.value },
+    {
+      name  = "PDS_ADAPTOR_SERVICE_URL",
+      value = "https://pds-adaptor.${local.env_domain_name}"
+    },
     { name = "PDS_ADAPTOR_AUTH_PASSWORD", value = data.aws_ssm_parameter.pds_adaptor_auth_password.value },
     { name = "RE_REGISTRATIONS_AUDIT_SNS_TOPIC_ARN", value = aws_sns_topic.re_registration_audit_topic.arn },
     { name = "CAN_SEND_DELETE_EHR_REQUEST", value = tostring(var.toggle_can_send_delete_ehr_request) },
-    { name  = "RE_REGISTRATION_SERVICE_EHR_REPO_URL", value = "https://ehr-repo.${var.environment_dns_zone}.patient-deductions.nhs.uk" },
-    { name  = "RE_REGISTRATION_SERVICE_AUTHORIZATION_KEYS_FOR_EHR_REPO",
+    {
+      name  = "EHR_REPO_URL",
+      value = "https://ehr-repo.${local.env_domain_name}"
+    },
+    {
+      name  = "RE_REGISTRATION_SERVICE_AUTHORIZATION_KEYS_FOR_EHR_REPO",
       value = data.aws_ssm_parameter.re_registration_service_authorization_keys_for_ehr_repo.value
     },
     { name = "ACTIVE_SUSPENSIONS_DYNAMODB_TABLE_NAME", value = aws_dynamodb_table.active_suspensions.name }
