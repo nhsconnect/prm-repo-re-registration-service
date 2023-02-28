@@ -1,6 +1,6 @@
 format_version: 4
 pipelines:
-  re-registration-service:
+  re-registration-service.build:
     group: repository
     label_template: '${COUNT}-${git[:8]}'
     materials:
