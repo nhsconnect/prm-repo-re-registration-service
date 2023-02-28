@@ -76,7 +76,7 @@ common:
           deploy: *deploy_job
 pipelines:
   re-registration-service.dev:
-    group: repository
+    group: repo-history
     label_template: '${COUNT}-${git[:8]}'
     materials:
       git:
@@ -92,7 +92,7 @@ pipelines:
     stages: *common_stages
 
   re-registration-service.test:
-    group: repository
+    group: repo-history
     label_template: '${COUNT}-${git[:8]}'
     materials:
       git:
@@ -111,7 +111,7 @@ pipelines:
     stages: *common_stages
 
   re-registration-service.pre-prod:
-    group: repository
+    group: repo-history
     label_template: '${COUNT}-${git[:8]}'
     materials:
       git:
@@ -129,30 +129,8 @@ pipelines:
       NHS_ENVIRONMENT: pre-prod
     stages: *common_stages
 
-  re-registration-service.perf:
-    group: repository
-    label_template: '${COUNT}-${git[:8]}'
-    materials:
-      git:
-        type: configrepo
-      app:
-        pipeline: re-registration-service
-        stage: docker
-      base_infra:
-        pipeline: prm-deductions-infra
-        stage: deploy_perf
-      test_env:
-        pipeline: re-registration-service.test
-        stage: deploy
-      e2e:
-        pipeline: continuity-e2e-tests.test
-        stage: test
-    environment_variables:
-      NHS_ENVIRONMENT: perf
-    stages: *common_stages
-
   re-registration-service.prod:
-    group: repository
+    group: repo-history
     label_template: '${COUNT}-${git[:8]}'
     materials:
       git:
