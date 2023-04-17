@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.7.6'
+    id 'org.springframework.boot' version '2.+'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'jacoco'
@@ -31,9 +31,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    // CVE-2022-1471 false positive as spring boot uses safe constructor in snakeyaml
-    // https://github.com/spring-projects/spring-boot/issues/33457
-    implementation 'org.yaml:snakeyaml:1.33'
+    implementation 'org.yaml:snakeyaml:2.0'
 
     implementation('io.netty:netty-buffer') { version { strictly '4.1.86.Final' } }
     implementation('io.netty:netty-codec') { version { strictly '4.1.86.Final' } }
