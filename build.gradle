@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.+'
+    id 'org.springframework.boot' version '2.7.+'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'jacoco'
@@ -31,7 +31,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    implementation 'org.yaml:snakeyaml:2.0'
+    implementation 'org.yaml:snakeyaml:2.+'
 
     implementation('io.netty:netty-buffer') { version { strictly '4.1.86.Final' } }
     implementation('io.netty:netty-codec') { version { strictly '4.1.86.Final' } }
