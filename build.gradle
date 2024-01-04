@@ -28,21 +28,21 @@ jar {
 }
 
 dependencies {
+    implementation 'org.yaml:snakeyaml:2.2'
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    implementation 'org.yaml:snakeyaml:2.0'
 
-    implementation('io.netty:netty-buffer') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-codec') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-codec-http') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-codec-http2') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-common') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-handler') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-resolver') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-transport') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.1.86.Final' } }
-    implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.1.86.Final' } }
+    implementation('io.netty:netty-buffer') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-codec') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-codec-http') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-codec-http2') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-common') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-handler') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-resolver') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-transport') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.1.104.Final' } }
+    implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.1.104.Final' } }
 
     implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:1.1.2'
 
