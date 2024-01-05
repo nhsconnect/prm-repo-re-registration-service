@@ -3,7 +3,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'jacoco'
-    id 'com.github.spotbugs' version '5.0.13'
+    id 'com.github.spotbugs' version '6.0.4'
     id 'org.owasp.dependencycheck' version '7.4.4'
 }
 
@@ -62,7 +62,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok'
 
-    implementation 'com.github.spotbugs:spotbugs-annotations:4.7.3'
+    implementation 'com.github.spotbugs:spotbugs-annotations:4.8.3'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-test'
@@ -125,6 +125,10 @@ jacocoTestCoverageVerification {
             fileTree(dir: it, exclude: '**/model/**')
         }))
     }
+}
+
+spotbugs {
+    toolVersion = '4.8.3'
 }
 
 spotbugsMain {
