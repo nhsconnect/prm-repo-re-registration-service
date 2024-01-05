@@ -28,8 +28,12 @@ jar {
 }
 
 dependencies {
-    implementation 'org.yaml:snakeyaml:2.2'
     implementation 'org.springframework.boot:spring-boot-starter'
+    constraints {
+        implementation('org.yaml:snakeyaml:2.2') {
+            because 'snakeyaml < 2.0 is vulnerable'
+        }
+    }
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
 
