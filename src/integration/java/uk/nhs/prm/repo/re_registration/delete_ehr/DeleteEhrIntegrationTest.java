@@ -5,6 +5,8 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,12 @@ import uk.nhs.prm.repo.re_registration.model.ReRegistrationEvent;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -37,6 +44,7 @@ import static org.awaitility.Awaitility.await;
 @DirtiesContext
 public class DeleteEhrIntegrationTest {
 
+    private static final Logger LOGGER = LogManager.getLogger(DeleteEhrIntegrationTest.class);
     public static final String NHS_NUMBER = "9999567890";
 
     @Autowired
@@ -80,16 +88,15 @@ public class DeleteEhrIntegrationTest {
         return wireMockServer;
     }
 
-
     @Test
     void shouldPutTheEHRDeleteAuditMessageOntoTheAuditQueueWhenActiveSuspensionExistsInDBAndPDSReturnsAStatusCode200() {
         activeSuspensionsDb.save(getActiveSuspensionsMessage());
-
-        sqs.sendMessage(reRegistrationsQueueUrl,getReRegistrationEvent().toJsonString());
+        sqs.sendMessage(reRegistrationsQueueUrl, getReRegistrationEvent().toJsonString());
 
         await().atMost(20, TimeUnit.SECONDS).untilAsserted(()-> {
             String messageBody = checkMessageInRelatedQueue(reRegistrationsAuditUrl).get(0).getBody();
             System.out.println("Found message - " + messageBody);
+
             assertThat(messageBody).contains("\"status\":\"ACTION:RE_REGISTRATION_EHR_DELETED\"");
             assertThat(messageBody).contains("\"nemsMessageId\":\"someNemsId\"");
             assertThat(messageBody).contains("\"conversationIds\":[\"2431d4ff-f760-4ab9-8cd8-a3fc47846762\",\"c184cc19-86e9-4a95-b5b5-2f156900bb3c\"]");
@@ -110,7 +117,7 @@ public class DeleteEhrIntegrationTest {
 
     private void stubResponses() {
         setPds200SuccessState();
-        ehrRepo200Response();
+        ehrRepository200Response();
     }
 
     private void setPds200SuccessState() {
@@ -123,7 +130,7 @@ public class DeleteEhrIntegrationTest {
                         .withBody(getPdsResponseString().getBody())));
     }
 
-    private void ehrRepo200Response() {
+    private void ehrRepository200Response() {
         stubFor(delete(urlMatching("/patients/" + NHS_NUMBER))
                 .withHeader("Authorization", matching(authKey))
                 .willReturn(aResponse()
@@ -136,27 +143,30 @@ public class DeleteEhrIntegrationTest {
                         .withHeader("Content-Type", "application/json")));
     }
 
-
     private ReRegistrationEvent getReRegistrationEvent() {
         String nemsMessageId = "someNemsId";
         return new ReRegistrationEvent(NHS_NUMBER, "ABC123", nemsMessageId, "2017-11-01T15:00:33+00:00");
     }
 
     private List<Message> checkMessageInRelatedQueue(String queueUrl) {
-        System.out.println("checking sqs queue: " + queueUrl);
+        LOGGER.info("Checking SQS Queue: {}", queueUrl);
 
-        var requestForMessagesWithAttributes
-                = new ReceiveMessageRequest().withQueueUrl(queueUrl)
+        ReceiveMessageRequest requestForMessagesWithAttributes = new ReceiveMessageRequest()
+                .withQueueUrl(queueUrl)
                 .withMessageAttributeNames("traceId");
-        List<Message> messages = sqs.receiveMessage(requestForMessagesWithAttributes).getMessages();
-        System.out.printf("Found %s messages on queue: %s%n", messages.size(), queueUrl);
+
+        final List<Message> messages = sqs
+                .receiveMessage(requestForMessagesWithAttributes)
+                .getMessages();
+
+        LOGGER.info("Found {} messages on queue: {}", messages.size(), queueUrl);
         assertThat(messages).hasSize(1);
         return messages;
     }
 
     private ResponseEntity<String> getPdsResponseString() {
-        var pdsResponseString = "{\"nhsNumber\":\"" + NHS_NUMBER + "\",\"isSuspended\":false,\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":\"managingOrganisation\",\"recordETag\":\"etag\",\"isDeceased\":false}";
-        return new ResponseEntity<>(pdsResponseString, HttpStatus.OK);
+        String pdsAdaptorResponseString = "{\"nhsNumber\":\"" + NHS_NUMBER + "\",\"isSuspended\":false,\"currentOdsCode\":\"currentOdsCode\",\"managingOrganisation\":\"managingOrganisation\",\"recordETag\":\"etag\",\"isDeceased\":false}";
+        return new ResponseEntity<>(pdsAdaptorResponseString, HttpStatus.OK);
     }
 
     private ActiveSuspensionsMessage getActiveSuspensionsMessage() {
