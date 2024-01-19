@@ -68,6 +68,10 @@ function configure_envs {
   export LOCALSTACK_URL="http://localstack:4566"
 }
 
+function configure_sonar_environment_variable {
+  export SONAR_TOKEN=$(_get_aws_ssm_secret "/repo/dev/output/re-registration-service/sonar_token")
+}
+
 function use_fake_aws_creds_for_localstack {
   export AWS_ACCESS_KEY_ID=fake-key-id
   export AWS_SECRET_ACCESS_KEY=fake-key
@@ -223,6 +227,16 @@ case "${command}" in
       use_fake_aws_creds_for_localstack
       die_localstack_die
       dojo -c Dojofile-itest "./tasks _test_all"
+      ;;
+  _run_sonar)
+      ./gradlew build sonar --info
+      ;;
+  run_sonar)
+      configure_envs
+      use_fake_aws_creds_for_localstack
+      configure_sonar_environment_variable
+      die_localstack_die
+      dojo -c Dojofile-itest "./tasks _run_sonar"
       ;;
   run_local)
       configure_envs

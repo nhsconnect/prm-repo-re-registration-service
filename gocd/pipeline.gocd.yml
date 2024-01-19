@@ -62,6 +62,20 @@ common:
               arguments:
                 - -c
                 - ./tasks code_quality
+      sonar_analysis:
+        environment_variables:
+          NHS_ENVIRONMENT: dev
+        resources:
+          - docker
+        artifacts:
+          - build:
+              source: build
+        tasks:
+          - exec:
+              command: /bin/bash
+              arguments:
+                - -c
+                - ./tasks run_sonar
   docker: &docker
     clean_workspace: true
     jobs:
