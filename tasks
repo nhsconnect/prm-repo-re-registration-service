@@ -233,8 +233,9 @@ case "${command}" in
       ;;
   run_sonar)
       configure_envs
-      use_fake_aws_creds_for_localstack
+      _assume_environment_role $NHS_ENVIRONMENT
       configure_sonar_environment_variable
+      use_fake_aws_creds_for_localstack
       die_localstack_die
       dojo -c Dojofile-itest "./tasks _run_sonar"
       ;;
