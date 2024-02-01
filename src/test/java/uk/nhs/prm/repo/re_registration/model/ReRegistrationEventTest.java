@@ -14,7 +14,6 @@ class ReRegistrationEventTest {
         // Given
         final String timestamp = getRandomTimestamp();
         final String odsCode = getRandomOdsCode();
-
         final ReRegistrationEvent reRegistrationEvent = new ReRegistrationEvent(
                 NHS_NUMBER,
                 odsCode,
