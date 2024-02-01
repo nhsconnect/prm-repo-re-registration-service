@@ -11,7 +11,6 @@ public class AuditMessage {
     private String status;
 
     public String toJsonString() {
-        return new GsonBuilder().disableHtmlEscaping().create()
-                .toJson(this);
+        return new GsonBuilder().create().toJson(this);
     }
 }
