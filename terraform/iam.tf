@@ -1,5 +1,8 @@
 locals {
   account_id = data.aws_caller_identity.current.account_id
+  sns_topic_arns = [
+    aws_sns_topic.re_registration_audit_topic.arn
+  ]
 }
 
 data "aws_iam_policy_document" "ecs-assume-role-policy" {
@@ -121,12 +124,15 @@ resource "aws_iam_policy" "sns_policy" {
 
 data "aws_iam_policy_document" "sns_policy_doc" {
   statement {
-    actions = [
-      "sns:Publish"
-    ]
-    resources = [
-      aws_sns_topic.re_registration_audit_topic.arn
-    ]
+    actions = ["sns:Publish"]
+    effect = "Deny"
+    resources = local.sns_topic_arns
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
   }
 }
 
