@@ -1,5 +1,8 @@
 locals {
   account_id = data.aws_caller_identity.current.account_id
+  sns_topic_arns = [
+    aws_sns_topic.re_registration_audit_topic.arn
+  ]
 }
 
 data "aws_iam_policy_document" "ecs-assume-role-policy" {
@@ -124,9 +127,7 @@ data "aws_iam_policy_document" "sns_policy_doc" {
     actions = [
       "sns:Publish"
     ]
-    resources = [
-      aws_sns_topic.re_registration_audit_topic.arn
-    ]
+    resources = local.sns_topic_arns
   }
 }
 
@@ -264,8 +265,8 @@ data "aws_iam_policy_document" "active_suspensions_sns_topic_access_to_queue" {
     ]
 
     condition {
-      test     = "ArnEquals"
-      values   = [
+      test = "ArnEquals"
+      values = [
         data.aws_ssm_parameter.suspension_active_suspensions_topic_arn.value,
         data.aws_ssm_parameter.end_of_transfer_active_suspensions_topic_arn.value
       ]
@@ -327,7 +328,7 @@ resource "aws_iam_policy" "dynamodb-table-access" {
 
 data "aws_iam_policy_document" "dynamodb-table-access" {
   statement {
-    actions   = [
+    actions = [
       "dynamodb:GetItem",
       "dynamodb:PutItem",
       "dynamodb:DeleteItem"
