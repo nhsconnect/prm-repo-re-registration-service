@@ -61,7 +61,7 @@ dependencies {
 
     implementation 'net.logstash.logback:logstash-logback-encoder:7.2'
 
-    compileOnly 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.projectlombok:lombok:1.18.36'
     annotationProcessor 'org.projectlombok:lombok'
 
     implementation 'com.github.spotbugs:spotbugs-annotations:4.8.3'
