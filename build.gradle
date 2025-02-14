@@ -46,7 +46,7 @@ dependencies {
     implementation('io.netty:netty-transport-classes-epoll') { version { strictly '4.1.104.Final' } }
     implementation('io.netty:netty-transport-native-unix-common') { version { strictly '4.1.104.Final' } }
 
-    implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:1.1.2'
+    implementation 'com.amazonaws:amazon-sqs-java-messaging-lib:2.1.4'
 
     implementation platform('software.amazon.awssdk:bom:2.18.41')
     implementation 'software.amazon.awssdk:cloudwatch'
